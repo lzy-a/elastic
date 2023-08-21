@@ -42,8 +42,6 @@ def train():
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
-    max_epoch = 100
-    first_epoch = 0
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
         print(f"load checkpoint from {ckp_path}")
@@ -51,8 +49,8 @@ def train():
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
         first_epoch = checkpoint["epoch"]
-
-    for i in range(first_epoch, max_epoch):
+    i=0
+    while True:
         time.sleep(1)
         optimizer.zero_grad()
         outputs = ddp_model(torch.randn(20, 10).to(local_rank))
@@ -62,7 +60,7 @@ def train():
         print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
         optimizer.step()
         save_checkpoint(i, ddp_model, optimizer, ckp_path)
-
+        i = i + 1
 def run():
     env_dict = {
         key: os.environ[key]
