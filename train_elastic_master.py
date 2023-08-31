@@ -1,5 +1,6 @@
 import argparse
 import os
+import socket
 import sys
 import time
 import tempfile
@@ -20,17 +21,20 @@ topic = 'test_topic'
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
 
+
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
-        return len(consumer)
+        return 10 ** 8
 
     def __getitem__(self, idx):
+        local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
         data = message.value.decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         return input_data, labels
+
 
 class ToyModel(nn.Module):
     def __init__(self):
@@ -45,14 +49,16 @@ class ToyModel(nn.Module):
 
 def save_checkpoint(epoch, model, optimizer, path):
     torch.save({
-    "epoch": epoch,
-    "model_state_dict": model.state_dict(),
-    "optimize_state_dict": optimizer.state_dict(),
-}, path)
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimize_state_dict": optimizer.state_dict(),
+    }, path)
+
 
 def load_checkpoint(path):
     checkpoint = torch.load(path)
     return checkpoint
+
 
 def train():
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -77,23 +83,24 @@ def train():
     dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
     i = 0
-    for input_data, labels in dataloader:
-        print(f"[{os.getpid()}] Received input data: {input_data}")
-        print(f"[{os.getpid()}] Received labels: {labels}")
-        optimizer.zero_grad()
-        outputs = ddp_model(input_data.unsqueeze(0))  # 输入数据要进行维度扩展
-        loss = loss_fn(outputs, labels)
-        loss.backward()
-        print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
-        optimizer.step()
-        save_checkpoint(i, ddp_model, optimizer, ckp_path)
-        i += 1
+    while True:
+        for input_data, labels in dataloader:
+            print(f"[{os.getpid()}] Received input data: {input_data}")
+            print(f"[{os.getpid()}] Received labels: {labels}")
+            optimizer.zero_grad()
+            outputs = ddp_model(input_data.unsqueeze(0))  # 输入数据要进行维度扩展
+            loss = loss_fn(outputs, labels)
+            loss.backward()
+            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            optimizer.step()
+            save_checkpoint(i, ddp_model, optimizer, ckp_path)
+            i += 1
 def run():
+    os.environ["MASTER_ADDR"] = os.environ["POD_IP"]
     env_dict = {
         key: os.environ[key]
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
     }
-    os.environ["MASTER_ADDR"] = os.environ["POD_IP"]
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     dist.init_process_group(backend="nccl")
     train()
