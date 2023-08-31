@@ -79,7 +79,8 @@ def train():
     # 创建数据加载器
     batch_size = 2
     dataset = KafkaDataset()
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+    sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=torch.distributed.get_world_size(),
+                                                              rank=torch.distributed.get_rank())
     dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
     i = 0

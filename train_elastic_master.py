@@ -79,7 +79,8 @@ def train():
     # 创建数据加载器
     batch_size = 2
     dataset = KafkaDataset()
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+    sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=torch.distributed.get_world_size(),
+                                                              rank=torch.distributed.get_rank())
     dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
     i = 0
@@ -95,6 +96,8 @@ def train():
             optimizer.step()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
+
+
 def run():
     os.environ["MASTER_ADDR"] = os.environ["POD_IP"]
     env_dict = {
