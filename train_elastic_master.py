@@ -63,6 +63,7 @@ def load_checkpoint(path):
 def train():
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
+    world_size = int(os.environ["WORLD_SIZE"])
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
     model = ToyModel().cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
@@ -79,8 +80,8 @@ def train():
     # 创建数据加载器
     batch_size = 2
     dataset = KafkaDataset()
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=torch.distributed.get_world_size(),
-                                                              rank=torch.distributed.get_rank())
+    sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
+                                                              rank=rank)
     dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
     i = 0
@@ -99,7 +100,10 @@ def train():
 
 
 def run():
+    # master:
     os.environ["MASTER_ADDR"] = os.environ["POD_IP"]
+    # worker:
+    # os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
