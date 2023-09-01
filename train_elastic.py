@@ -100,10 +100,7 @@ def train():
 
 
 def run():
-    # master:
-    os.environ["MASTER_ADDR"] = os.environ["POD_IP"]
-    # worker:
-    # os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
+    os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
