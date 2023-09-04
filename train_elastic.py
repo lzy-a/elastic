@@ -21,6 +21,7 @@ topic = 'test_topic'
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
 
+lag_file = open('lag.txt', 'w')
 
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
@@ -33,7 +34,7 @@ class KafkaDataset(torch.utils.data.Dataset):
         data = message.value.decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
-        return input_data, labels
+        return input_data, labels, message.timestamp
 
 
 class ToyModel(nn.Module):
@@ -86,11 +87,14 @@ def train():
 
     i = 0
     while True:
-        for input_data, labels in dataloader:
+        for input_data, labels, timestamp in dataloader:
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
+            lag = time.time() - timestamp
+            lag_file.write(f"Timestamp: {timestamp}, Lag: {lag}\n")
+
             optimizer.zero_grad()
-            outputs = ddp_model(input_data.unsqueeze(0))  # 输入数据要进行维度扩展
+            outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels)
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
