@@ -3,6 +3,7 @@ import os
 import socket
 import sys
 import time
+from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
 
@@ -22,6 +23,7 @@ topic = 'test_topic'
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
 
 lag_file = open('lag.txt', 'w')
+
 
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
@@ -90,9 +92,11 @@ def train():
         for input_data, labels, timestamp in dataloader:
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
-            lag = time.time() - timestamp
-            lag_file.write(f"Timestamp: {timestamp}, Lag: {lag}\n")
-
+            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
+            lag = time.time() - dt
+            lag_file.write(f"Timestamp: {dt}, Lag: {lag}\n")
+            if i % 10 == 0:
+                lag_file.flush()
             optimizer.zero_grad()
             outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels)
