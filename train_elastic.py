@@ -18,9 +18,9 @@ from kafka import KafkaConsumer
 
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
-topic = 'test_topic'
+topic = 'stream'
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1')
 
 lag_file = open('lag.txt', 'w')
 
@@ -97,7 +97,7 @@ def train():
         for sample in dataloader:
             input_data = sample["input_data"]
             labels = sample["labels"]
-            timestamp = sample["timestamp"][0].item()/1000
+            timestamp = sample["timestamp"][0].item() / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
