@@ -20,7 +20,7 @@ from kafka import KafkaConsumer
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'test_topic'
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, auto_offset_reset='earliest')
 
 lag_file = open('lag.txt', 'w')
 
