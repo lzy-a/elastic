@@ -23,7 +23,7 @@ topic = 'stream'
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1')
 
 lag_file = open('lag.txt', 'w')
-
+proc_file = open('proc.txt', 'w')
 
 
 # 定义自定义数据加载器
@@ -103,14 +103,19 @@ def train():
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
             lag_file.write(f"cur: {time.time()}, timestamp: {timestamp}, Lag: {lag}\n")
-            if i % 100 == 0:
-                lag_file.flush()
+            start = time.time()
             optimizer.zero_grad()
             outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels)
             loss.backward()
+            proc_file.write(f"epoch {i} grad-span = {time.time()-start}\n")
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            start = time.time()
             optimizer.step()
+            proc_file.write(f"epoch {i} sync-span = {time.time() - start}\n")
+            if i % 10 == 0:
+                lag_file.flush()
+                proc_file.flush()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
 
