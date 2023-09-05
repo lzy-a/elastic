@@ -32,12 +32,15 @@ class KafkaDataset(torch.utils.data.Dataset):
         return 10 ** 8
 
     def __getitem__(self, idx):
+        start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
         data = message.value.decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         timestamp = message.timestamp
+        proc_file.write(f"-------get-item-span = {time.time() - start}\n")
+        proc_file.flush()
         return {
             'input_data': input_data,
             'labels': labels,
