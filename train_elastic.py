@@ -25,6 +25,7 @@ consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1
 lag_file = open('lag.txt', 'w')
 
 
+
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
