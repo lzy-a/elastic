@@ -100,8 +100,8 @@ def train():
             timestamp = sample["timestamp"][0].item()/1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
-            lag = int(time.time()) - int(timestamp)
-            lag_file.write(f"timestamp: {timestamp}, Lag: {lag}\n")
+            lag = time.time() - timestamp
+            lag_file.write(f"cur: {time.time()}, timestamp: {timestamp}, Lag: {lag}\n")
             if i % 100 == 0:
                 lag_file.flush()
             optimizer.zero_grad()
