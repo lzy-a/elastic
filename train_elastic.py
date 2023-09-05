@@ -20,7 +20,7 @@ from kafka import KafkaConsumer
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream'
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1')
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='3')
 
 lag_file = open('lag.txt', 'w')
 proc_file = open('proc.txt', 'w')
@@ -89,9 +89,9 @@ def train():
     # 创建数据加载器
     batch_size = 2
     dataset = KafkaDataset()
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
-                                                              rank=rank)
-    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler)
+    # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
+    #                                                           rank=rank)
+    dataloader = DataLoader(dataset, batch_size=batch_size)
 
     i = 0
     while True:
