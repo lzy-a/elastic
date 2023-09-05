@@ -20,7 +20,7 @@ from kafka import KafkaConsumer
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'test_topic'
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, auto_offset_reset='earliest')
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
 
 lag_file = open('lag.txt', 'w')
 
@@ -97,12 +97,12 @@ def train():
         for sample in dataloader:
             input_data = sample["input_data"]
             labels = sample["labels"]
-            timestamp = sample["timestamp"]
+            timestamp = sample["timestamp"][0].item()/1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
-            lag = int(time.time()) - int(timestamp / 1000)
-            lag_file.write(f"timestamp: {timestamp / 1000}, Lag: {lag}\n")
-            if i % 10 == 0:
+            lag = int(time.time()) - int(timestamp)
+            lag_file.write(f"timestamp: {timestamp}, Lag: {lag}\n")
+            if i % 100 == 0:
                 lag_file.flush()
             optimizer.zero_grad()
             outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
