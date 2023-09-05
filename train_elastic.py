@@ -33,10 +33,10 @@ class KafkaDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
-        data = message.value.decode('utf-8').split(',')
-        input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
-        labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
-        return input_data, labels, message.timestamp
+        # data = message.value.decode('utf-8').split(',')
+        # input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
+        # labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
+        return message
 
 
 class ToyModel(nn.Module):
@@ -89,12 +89,14 @@ def train():
 
     i = 0
     while True:
-        for input_data, labels, timestamp in dataloader:
+        for message in dataloader:
+            data = message.value.decode('utf-8').split(',')
+            input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
+            labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
-            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
-            lag = time.time() - dt
-            lag_file.write(f"Timestamp: {dt}, Lag: {lag}\n")
+            lag = int(time.time()) - int(message.timestamp / 1000)
+            lag_file.write(f"timestamp: {message.timestamp / 1000}, Lag: {lag}\n")
             if i % 10 == 0:
                 lag_file.flush()
             optimizer.zero_grad()
