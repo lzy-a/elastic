@@ -131,7 +131,7 @@ def kafka_setup():
     # 订阅主题并加入消费者组
     i = 0
     while i < 3:
-        time.sleep(0.1)
+        time.sleep(1)
         messages = consumer.poll(timeout_ms=6000, max_records=1)
         if messages:
             i = i + 1
