@@ -16,12 +16,13 @@ from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
 
+
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1', auto_offset_reset='latest')
-
+print(f"[{os.getpid()}] ( consumer starting...")
 lag_file = open('lag.txt', 'w')
 proc_file = open('proc.txt', 'w')
 
