@@ -127,8 +127,11 @@ def train():
 
 def kafka_setup():
     # 订阅主题并加入消费者组
-    consumer.subscribe([topic])
-    print(f"[{os.getpid()}] ( consumer starting...")
+    while True:
+        print(f"[{os.getpid()}]  consumer starting...")
+        messages = consumer.poll(timeout_ms=6000, max_records=1)
+        if messages:
+            break
 
 def run():
     kafka_setup()
