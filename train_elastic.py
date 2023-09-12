@@ -16,12 +16,12 @@ from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
 
-
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1', auto_offset_reset='latest')
+consumer.subscribe([topic])
 lag_file = open('lag.txt', 'w')
 proc_file = open('proc.txt', 'w')
 
@@ -112,7 +112,7 @@ def train():
             outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels)
             loss.backward()
-            proc_file.write(f"epoch {i} grad-span = {time.time()-start}\n")
+            proc_file.write(f"epoch {i} grad-span = {time.time() - start}\n")
             proc_file.flush()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
             start = time.time()
@@ -120,18 +120,22 @@ def train():
             proc_file.write(f"epoch {i} sync-span = {time.time() - start}\n")
             proc_file.flush()
             # if i % 10 == 0:
-                # lag_file.flush()
-                # proc_file.flush()
+            # lag_file.flush()
+            # proc_file.flush()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
 
+
+# 不要在Kafka消费者组初始化完成之前进入训练过程
 def kafka_setup():
     # 订阅主题并加入消费者组
-    while True:
-        print(f"[{os.getpid()}]  consumer starting...")
+    time.sleep(1)
+    i = 0
+    while i < 3:
         messages = consumer.poll(timeout_ms=6000, max_records=1)
         if messages:
-            break
+            i = i + 1
+
 
 def run():
     kafka_setup()
