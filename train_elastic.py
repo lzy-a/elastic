@@ -138,6 +138,7 @@ def kafka_warmup():
 # 先初始化好kafka再dist init
 def kafka_setup():
     while True:
+        print(f"[{os.getpid()}] consumer beginning")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         if msg:
             break
