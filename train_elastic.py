@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
+from multiprocessing import Process
 
 import torch
 import torch.distributed as dist
@@ -21,7 +22,7 @@ bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1', auto_offset_reset='latest')
-consumer.subscribe([topic])
+
 lag_file = open('lag.txt', 'w')
 proc_file = open('proc.txt', 'w')
 
@@ -128,17 +129,20 @@ def train():
 
 # 不要在Kafka消费者组初始化完成之前进入训练过程
 def kafka_setup():
-    # 订阅主题并加入消费者组
-    time.sleep(5)
-    i = 0
-    while i < 3:
-        messages = consumer.poll(timeout_ms=6000, max_records=1)
-        if messages:
-            i = i + 1
-            print(f"[{os.getpid()}] consumer starting {i}...")
+    consumer.subscribe([topic])
+    p = Process(target=poll_loop)
+    p.start()
+
+
+def poll_loop():
+    start = time.time()
+    while time.time() - start > 10:
+        time.sleep(1)
+        consumer.poll(timeout_ms=1000)
 
 
 def run():
+    kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
@@ -146,7 +150,6 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     dist.init_process_group(backend="nccl")
-    kafka_setup()
     train()
     dist.destroy_process_group()
 
