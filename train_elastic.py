@@ -139,7 +139,7 @@ def kafka_warmup():
 def kafka_setup():
     while True:
         msg = consumer.poll(timeout_ms=1000, max_records=1)
-        if not msg:
+        if msg:
             break
 
 
