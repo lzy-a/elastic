@@ -136,7 +136,7 @@ def kafka_setup():
 
 def poll_loop():
     start = time.time()
-    while time.time() - start > 10:
+    while time.time() - start < 10:
         time.sleep(1)
         consumer.poll(timeout_ms=1000)
 
