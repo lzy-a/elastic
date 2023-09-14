@@ -132,7 +132,7 @@ def kafka_setup():
     time.sleep(5)
     i = 0
     while i < 3:
-        messages = consumer.poll(timeout_ms=6000, max_records=0)
+        messages = consumer.poll(timeout_ms=6000, max_records=1)
         if messages:
             i = i + 1
             print(f"[{os.getpid()}] consumer starting {i}...")
