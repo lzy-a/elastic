@@ -56,9 +56,6 @@ class ToyModel(nn.Module):
         self.net2 = nn.Linear(10, 5)
 
     def forward(self, x):
-        start = time.time()
-        while time.time() - start < 0.5:
-            pass
         return self.net2(self.relu(self.net1(x)))
 
 
