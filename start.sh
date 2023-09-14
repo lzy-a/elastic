@@ -5,10 +5,10 @@ sleep 5
 # 获取endpoint_ip
 endpoint_ip=$(python -c "import socket; print(socket.gethostbyname('elastic-master-service.default.svc.cluster.local'))")
 
-if [ "$endpoint_ip" == "$POD_IP" ]; then
-  # 执行Python脚本
-  python modify.py
-fi
+#if [ "$endpoint_ip" == "$POD_IP" ]; then
+#  # 执行Python脚本
+#  python modify.py
+#fi
 
 # 执行torchrun命令
 torchrun \
