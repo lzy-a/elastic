@@ -145,7 +145,6 @@ def kafka_setup():
 
 def run():
     kafka_setup()
-    # kafka_warmup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
@@ -153,7 +152,7 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     dist.init_process_group(backend="nccl")
-
+    # kafka_warmup()
     train()
     dist.destroy_process_group()
 
