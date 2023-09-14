@@ -145,7 +145,7 @@ def kafka_setup():
 
 
 def run():
-    # kafka_setup()
+    kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
