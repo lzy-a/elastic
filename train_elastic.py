@@ -15,10 +15,12 @@ from torch.utils.data import DataLoader
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
+from kafka import KafkaAdminClient
 
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
+client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1', auto_offset_reset='latest')
 consumer.subscribe([topic])
@@ -137,11 +139,9 @@ def kafka_warmup():
 
 # 先初始化好kafka再dist init
 def kafka_setup():
-    while True:
+    while len(client.list_consumer_groups()) <= int(os.environ["WORLD_SIZE"]):
         print(f"[{os.getpid()}] consumer beginning")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
-        if msg:
-            break
 
 
 def run():
