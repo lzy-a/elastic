@@ -129,10 +129,10 @@ def train():
 # 不要在Kafka消费者组初始化完成之前进入训练过程
 def kafka_setup():
     # 订阅主题并加入消费者组
+    time.sleep(5)
     i = 0
     while i < 3:
-        time.sleep(1)
-        messages = consumer.poll(timeout_ms=6000, max_records=1)
+        messages = consumer.poll(timeout_ms=6000, max_records=0)
         if messages:
             i = i + 1
             print(f"[{os.getpid()}] consumer starting {i}...")
