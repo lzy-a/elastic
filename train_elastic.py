@@ -16,7 +16,11 @@ from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
+from prometheus_client import Gauge
+from prometheus_client import start_http_server
 
+g = Gauge('lag', 'kafka lag')
+g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
@@ -109,6 +113,7 @@ def train():
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
+            g.set(lag)
             lag_file.write(f"epoch:{i}, Lag: {lag}\n")
             lag_file.flush()
             start = time.time()
@@ -158,6 +163,7 @@ def kafka_setup():
 
 
 def run():
+    start_http_server(9000)  # prom exporter http://$pod_ip:9000/metrics
     kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
