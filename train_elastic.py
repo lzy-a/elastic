@@ -20,9 +20,10 @@ from kafka import KafkaAdminClient
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
+group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id='1', auto_offset_reset='latest')
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
 lag_file = open('lag.txt', 'w')
 proc_file = open('proc.txt', 'w')
@@ -140,9 +141,13 @@ def kafka_warmup():
 # 先初始化好kafka再dist init
 def kafka_setup():
     ws = os.environ["WORLD_SIZE"]
-    while len(client.list_consumer_groups()) < int(ws):
-        print(f"[{os.getpid()}] consumer cnt {len(client.list_consumer_groups())} ws {ws}")
+    group_description = client.describe_consumer_groups(["your-consumer-group"])
+    member_count = len(group_description["your-consumer-group"].members)
+    while member_count < int(ws):
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
+        group_description = client.describe_consumer_groups(["your-consumer-group"])
+        member_count = len(group_description["your-consumer-group"].members)
 
 
 def run():
