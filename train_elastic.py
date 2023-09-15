@@ -27,6 +27,7 @@ consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=gr
 consumer.subscribe([topic])
 lag_file = open('lag.txt', 'a')
 proc_file = open('proc.txt', 'w')
+global_batch_size = 12
 
 
 # 定义自定义数据加载器
@@ -93,7 +94,7 @@ def train():
         first_epoch = checkpoint["epoch"]
 
     # 创建数据加载器
-    batch_size = 2
+    batch_size = global_batch_size / world_size
     dataset = KafkaDataset()
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
