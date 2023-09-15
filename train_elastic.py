@@ -25,7 +25,7 @@ client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
-lag_file = open('lag.txt', 'w')
+lag_file = open('lag.txt', 'a')
 proc_file = open('proc.txt', 'w')
 
 
@@ -108,7 +108,7 @@ def train():
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
-            lag_file.write(f"cur: {time.time()}, timestamp: {timestamp}, Lag: {lag}\n")
+            lag_file.write(f"epoch:{i}, Lag: {lag}\n")
             lag_file.flush()
             start = time.time()
             optimizer.zero_grad()
