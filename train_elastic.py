@@ -43,7 +43,7 @@ class KafkaDataset(torch.utils.data.Dataset):
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         timestamp = message.timestamp
-        proc_file.write(f"[{os.getpid()}]-------get-item-span = {time.time() - start}\n")
+        proc_file.write(f"[{os.getpid()}] get-item-span = {time.time() - start}\n")
         proc_file.flush()
         return {
             'input_data': input_data,
