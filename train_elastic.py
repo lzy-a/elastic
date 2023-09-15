@@ -141,14 +141,18 @@ def kafka_warmup():
 # 先初始化好kafka再dist init
 def kafka_setup():
     ws = os.environ["WORLD_SIZE"]
-    group_description = client.describe_consumer_groups([group])
-    print(group_description)
-    # member_count = len(group_description[group].members)
-    # while member_count < int(ws):
-    #     print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-    #     msg = consumer.poll(timeout_ms=1000, max_records=1)
-    #     group_description = client.describe_consumer_groups([group])
-    #     member_count = len(group_description[group].members)
+    member_count = 0
+    while member_count < int(ws):
+        group_description = client.describe_consumer_groups([group])
+        print(group_description)
+        for group_des in group_description:
+            if group_des.group != group:
+                continue
+            else:
+                member_count = len(group_des.members)
+                break
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
 
 
 def run():
