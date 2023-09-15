@@ -146,8 +146,8 @@ def kafka_setup():
     while member_count < int(ws):
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
-        group_description = client.describe_consumer_groups(["your-consumer-group"])
-        member_count = len(group_description["your-consumer-group"].members)
+        group_description = client.describe_consumer_groups([group])
+        member_count = len(group_description[group].members)
 
 
 def run():
