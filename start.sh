@@ -1,6 +1,6 @@
 #!/bin/bash
 #等待service创建
-sleep 5
+#sleep 5
 
 # 获取endpoint_ip
 endpoint_ip=$(python -c "import socket; print(socket.gethostbyname('elastic-master-service.default.svc.cluster.local'))")
