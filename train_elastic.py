@@ -22,6 +22,7 @@ from confluent_kafka import Consumer
 
 
 def on_assign(consumer, partitions):
+    print('Assignment:', partitions)
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
     while member_count < int(ws):
