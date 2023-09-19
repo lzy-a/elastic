@@ -36,7 +36,7 @@ def on_assign(consumer, partitions):
             break
         print(group_description)
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        msg = consumer.poll(1.0)
         time.sleep(0.1)
 
 
