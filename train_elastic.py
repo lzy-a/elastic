@@ -135,17 +135,7 @@ def train():
             i += 1
 
 
-# 不要在Kafka消费者组初始化完成之前进入训练过程
-def kafka_warmup():
-    # 订阅主题并加入消费者组
-    start = time.time()
-    while time.time() - start < 10:
-        time.sleep(1)
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
-
-
-# 先初始化好kafka再dist init
-def kafka_setup():
+def on_assign(consumer, partitions):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
     while member_count < int(ws):
@@ -157,15 +147,17 @@ def kafka_setup():
             else:
                 member_count = len(group_des.members)
                 break
+        if member_count == ws:
+            break
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
 
 
 def run():
-    if int(os.environ["RANK"])==0:
+    if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
-    kafka_setup()
+    # kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
@@ -173,7 +165,6 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     dist.init_process_group(backend="nccl")
-    # kafka_warmup()
     train()
     dist.destroy_process_group()
 
