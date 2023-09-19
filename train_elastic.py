@@ -163,7 +163,7 @@ def kafka_setup():
 
 
 def run():
-    if int(os.environ["RANK"])==0:
+    if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
