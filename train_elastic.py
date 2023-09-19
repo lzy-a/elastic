@@ -26,6 +26,7 @@ def on_assign(consumer, partitions):
     member_count = 0
     while member_count < int(ws):
         group_description = client.describe_consumer_groups([group])
+        print(group_description)
         for group_des in group_description:
             if group_des.group != group or group_des.state != 'Stable':
                 continue
@@ -34,7 +35,6 @@ def on_assign(consumer, partitions):
                 break
         if member_count == ws:
             break
-        print(group_description)
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(1.0)
         time.sleep(0.1)
