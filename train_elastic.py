@@ -14,32 +14,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from torch.nn.parallel import DistributedDataParallel as DDP
-# from kafka import KafkaConsumer
+from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
-from confluent_kafka import Consumer
-
-
-def on_assign(consumer, partitions):
-    print('Assignment:', partitions)
-    ws = os.environ["WORLD_SIZE"]
-    member_count = 0
-    while member_count < int(ws):
-        group_description = client.describe_consumer_groups([group])
-        print(group_description)
-        for group_des in group_description:
-            if group_des.group != group or group_des.state != 'Stable':
-                continue
-            else:
-                member_count = len(group_des.members)
-                break
-        if member_count == ws:
-            break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(1.0)
-        time.sleep(0.1)
-
 
 g = Gauge('lag', 'kafka lag')
 g.set(0)
@@ -47,15 +25,10 @@ g.set(0)
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
 group = '1'
-conf = {
-    'bootstrap.servers': bootstrap_servers,
-    'group.id': group,
-    'auto.offset.reset': 'latest'
-}
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-consumer = Consumer(conf)
-consumer.subscribe([topic], on_assign=on_assign)
+consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+consumer.subscribe([topic])
 lag_file = open('lag.txt', 'a')
 proc_file = open('proc.txt', 'w')
 global_batch_size = 12
@@ -69,10 +42,8 @@ class KafkaDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
-        message = consumer.poll(1.0)
-        while message is None:
-            message = consumer.poll(1.0)
-        data = message.value().decode('utf-8').split(',')
+        message = next(consumer)
+        data = message.value.decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         timestamp = message.timestamp
@@ -164,10 +135,52 @@ def train():
             i += 1
 
 
+# 不要在Kafka消费者组初始化完成之前进入训练过程
+def kafka_warmup():
+    # 订阅主题并加入消费者组
+    start = time.time()
+    while time.time() - start < 10:
+        time.sleep(1)
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
+
+
+# 先初始化好kafka再dist init
+def kafka_setup():
+    ws = os.environ["WORLD_SIZE"]
+    member_count = 0
+    while member_count < int(ws):
+        group_description = client.describe_consumer_groups([group])
+        print(group_description)
+        for group_des in group_description:
+            if group_des.group != group or group_des.state != 'Stable':
+                continue
+            else:
+                member_count = len(group_des.members)
+                break
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        time.sleep(0.1)
+
+def on_assign(consumer, partitions):
+    ws = os.environ["WORLD_SIZE"]
+    member_count = 0
+    while member_count < int(ws):
+        group_description = client.describe_consumer_groups([group])
+        print(group_description)
+        for group_des in group_description:
+            if group_des.group != group or group_des.state != 'Stable':
+                continue
+            else:
+                member_count = len(group_des.members)
+                break
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        time.sleep(0.1)
+
 def run():
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
-    # kafka_setup()
+    kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     env_dict = {
         key: os.environ[key]
@@ -175,6 +188,7 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     dist.init_process_group(backend="nccl")
+    # kafka_warmup()
     train()
     dist.destroy_process_group()
 
