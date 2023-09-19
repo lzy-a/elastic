@@ -72,7 +72,7 @@ class KafkaDataset(torch.utils.data.Dataset):
         message = consumer.poll(1.0)
         while message is None:
             message = consumer.poll(1.0)
-        data = message.value.decode('utf-8').split(',')
+        data = message.value().decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         timestamp = message.timestamp
