@@ -161,6 +161,21 @@ def kafka_setup():
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
 
+def on_assign(consumer, partitions):
+    ws = os.environ["WORLD_SIZE"]
+    member_count = 0
+    while member_count < int(ws):
+        group_description = client.describe_consumer_groups([group])
+        print(group_description)
+        for group_des in group_description:
+            if group_des.group != group or group_des.state != 'Stable':
+                continue
+            else:
+                member_count = len(group_des.members)
+                break
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        time.sleep(0.1)
 
 def run():
     if int(os.environ["RANK"]) == 0:
