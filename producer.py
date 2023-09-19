@@ -24,7 +24,7 @@ def send_message(sleep_interval):
     message = "{},{}".format(input_data, labels).encode('utf-8')
     producer.send(topic, value=message)
     print("Sent message: {}".format(message))
-    g.set(sleep_interval)
+    g.set(1.0/sleep_interval)
     time.sleep(sleep_interval)
 
 

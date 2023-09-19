@@ -40,6 +40,7 @@ class KafkaDataset(torch.utils.data.Dataset):
         return 10 ** 8
 
     def __getitem__(self, idx):
+        # kafka setup?
         start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
