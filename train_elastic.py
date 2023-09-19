@@ -14,10 +14,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from torch.nn.parallel import DistributedDataParallel as DDP
-from kafka import KafkaConsumer
+# from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
+from confluent_kafka import Consumer
 
 
 def on_assign(consumer, partitions):
@@ -25,7 +26,6 @@ def on_assign(consumer, partitions):
     member_count = 0
     while member_count < int(ws):
         group_description = client.describe_consumer_groups([group])
-        print(group_description)
         for group_des in group_description:
             if group_des.group != group or group_des.state != 'Stable':
                 continue
@@ -34,6 +34,7 @@ def on_assign(consumer, partitions):
                 break
         if member_count == ws:
             break
+        print(group_description)
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
@@ -45,14 +46,15 @@ g.set(0)
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
 group = '1'
+conf = {
+    'bootstrap.servers': bootstrap_servers,
+    'group.id': group,
+    'auto.offset.reset': 'latest'
+}
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic,
-                         bootstrap_servers=bootstrap_servers,
-                         group_id=group,
-                         auto_offset_reset='latest',
-                         on_partitions_assigned=on_assign)
-consumer.subscribe([topic])
+consumer = Consumer(conf)
+consumer.subscribe([topic], on_assign=on_assign)
 lag_file = open('lag.txt', 'a')
 proc_file = open('proc.txt', 'w')
 global_batch_size = 12
@@ -66,7 +68,7 @@ class KafkaDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
-        message = next(consumer)
+        message = consumer.poll(1.0)
         data = message.value.decode('utf-8').split(',')
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
