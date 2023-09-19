@@ -19,6 +19,26 @@ from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
+
+def on_assign(consumer, partitions):
+    ws = os.environ["WORLD_SIZE"]
+    member_count = 0
+    while member_count < int(ws):
+        group_description = client.describe_consumer_groups([group])
+        print(group_description)
+        for group_des in group_description:
+            if group_des.group != group or group_des.state != 'Stable':
+                continue
+            else:
+                member_count = len(group_des.members)
+                break
+        if member_count == ws:
+            break
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        time.sleep(0.1)
+
+
 g = Gauge('lag', 'kafka lag')
 g.set(0)
 # 设置 Kafka 主题和服务器地址
@@ -27,7 +47,11 @@ topic = 'stream-6'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+consumer = KafkaConsumer(topic,
+                         bootstrap_servers=bootstrap_servers,
+                         group_id=group,
+                         auto_offset_reset='latest',
+                         on_partitions_assigned=on_assign)
 consumer.subscribe([topic])
 lag_file = open('lag.txt', 'a')
 proc_file = open('proc.txt', 'w')
@@ -133,25 +157,6 @@ def train():
             # proc_file.flush()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
-
-
-def on_assign(consumer, partitions):
-    ws = os.environ["WORLD_SIZE"]
-    member_count = 0
-    while member_count < int(ws):
-        group_description = client.describe_consumer_groups([group])
-        print(group_description)
-        for group_des in group_description:
-            if group_des.group != group or group_des.state != 'Stable':
-                continue
-            else:
-                member_count = len(group_des.members)
-                break
-        if member_count == ws:
-            break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
-        time.sleep(0.1)
 
 
 def run():
