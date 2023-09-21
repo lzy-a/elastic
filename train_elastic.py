@@ -20,8 +20,11 @@ from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
-g = Gauge('lag', 'kafka lag')
-g.set(0)
+lag_g = Gauge('lag', 'kafka lag')
+get_item_g = Gauge('get item', 'read samples cost time')
+grad_span_g = Gauge('grad', 'grad cost time')
+sync_span_g = Gauge('sync', 'sync cost time')
+lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream-6'
@@ -30,8 +33,7 @@ client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
-lag_file = open('lag.txt', 'a')
-proc_file = open('proc.txt', 'w')
+
 global_batch_size = 12
 
 
@@ -48,8 +50,7 @@ class KafkaDataset(torch.utils.data.Dataset):
         input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
         labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
         timestamp = message.timestamp
-        proc_file.write(f"[{os.getpid()}] get-item-span = {time.time() - start}\n")
-        proc_file.flush()
+        get_item_g.set(time.time() - start)
         return {
             'input_data': input_data,
             'labels': labels,
@@ -114,21 +115,17 @@ def train():
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
-            g.set(lag)
-            lag_file.write(f"epoch:{i}, Lag: {lag}\n")
-            lag_file.flush()
+            lag_g.set(lag)
             start = time.time()
             optimizer.zero_grad()
             outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels)
             loss.backward()
-            proc_file.write(f"epoch {i} grad-span = {time.time() - start}\n")
-            proc_file.flush()
+            grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
             start = time.time()
             optimizer.step()
-            proc_file.write(f"epoch {i} sync-span = {time.time() - start}\n")
-            proc_file.flush()
+            sync_span_g.set(time.time() - start)
             # if i % 10 == 0:
             # lag_file.flush()
             # proc_file.flush()
@@ -162,6 +159,7 @@ def kafka_setup():
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
 
+
 def on_assign(consumer, partitions):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
@@ -177,6 +175,7 @@ def on_assign(consumer, partitions):
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
+
 
 def run():
     if int(os.environ["RANK"]) == 0:
