@@ -3,6 +3,7 @@ import os
 import socket
 import sys
 import time
+from datetime import timedelta
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
@@ -187,7 +188,7 @@ def run():
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
-    dist.init_process_group(backend="nccl")
+    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=30))
     # kafka_warmup()
     train()
     dist.destroy_process_group()
