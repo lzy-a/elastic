@@ -183,6 +183,7 @@ def run():
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
+    os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"
     env_dict = {
         key: os.environ[key]
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
