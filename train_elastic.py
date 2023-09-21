@@ -21,7 +21,7 @@ from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
 lag_g = Gauge('lag', 'kafka lag')
-get_item_g = Gauge('get-item', 'read samples cost time')
+get_item_g = Gauge('get_item', 'read samples cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
