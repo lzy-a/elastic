@@ -34,7 +34,7 @@ client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
 
-global_batch_size = 12
+global_batch_size = 128
 
 
 # 定义自定义数据加载器
@@ -100,11 +100,11 @@ def train():
         first_epoch = checkpoint["epoch"]
 
     # 创建数据加载器
-    batch_size = int(global_batch_size / world_size)
+    # batch_size = int(global_batch_size / world_size)
     dataset = KafkaDataset()
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     i = 0
     while True:
@@ -188,7 +188,9 @@ def run():
         for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
+    start = time.time()
     dist.init_process_group(backend="nccl", timeout=timedelta(seconds=15))
+    print(f"[{os.getpid()}] init time: {time.time() - start}")
     # kafka_warmup()
     train()
     dist.destroy_process_group()
