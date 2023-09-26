@@ -7,7 +7,7 @@ from datetime import timedelta
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
-
+import json
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -19,6 +19,8 @@ from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
+
+from DCAP import DCAP
 
 lag_g = Gauge('lag', 'kafka lag')
 get_item_g = Gauge('get_item', 'read samples cost time')
@@ -36,7 +38,30 @@ consumer.subscribe([topic])
 
 global_batch_size = 128
 
+class DCAPDataset(torch.utils.data.Dataset):
+    def __len__(self):
+        return 10 ** 8
 
+    def __getitem__(self, idx):
+        start = time.time()
+        local_rank = int(os.environ["LOCAL_RANK"])
+        message = next(consumer)
+        message_dict = json.loads(message.value().decode('utf-8'))
+
+        # 现在你可以通过键来访问train和label数据
+        train_data = message_dict['train']
+        label_data = message_dict['label']
+
+        train_tensor = torch.tensor(list(train_data.values()))
+        label_tensor = torch.tensor(list(label_data.values()))
+
+        timestamp = message.timestamp
+        get_item_g.set(time.time() - start)
+        return {
+            'input_data': train_tensor,
+            'labels': label_tensor,
+            'timestamp': timestamp
+        }
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
@@ -87,7 +112,8 @@ def train():
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
-    model = ToyModel().cuda(local_rank)
+    #model = ToyModel().cuda(local_rank)
+    model = DCAP().cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
@@ -112,8 +138,8 @@ def train():
             input_data = sample["input_data"]
             labels = sample["labels"]
             timestamp = sample["timestamp"][0].item() / 1000
-            print(f"[{os.getpid()}] Received input data: {input_data}")
-            print(f"[{os.getpid()}] Received labels: {labels}")
+            print(f"[{os.getpid()}] Received input data: ")
+            print(f"[{os.getpid()}] Received labels: ")
             lag = time.time() - timestamp
             lag_g.set(lag)
             start = time.time()
