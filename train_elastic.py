@@ -46,14 +46,15 @@ class DCAPDataset(torch.utils.data.Dataset):
         start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
-        message_dict = json.loads(message.value().decode('utf-8'))
+        print(message)
+        message_dict = json.loads(message.value.decode('utf-8'))
 
         # 现在你可以通过键来访问train和label数据
         train_data = message_dict['train']
         label_data = message_dict['label']
 
-        train_tensor = torch.tensor(list(train_data.values()))
-        label_tensor = torch.tensor(list(label_data.values()))
+        train_tensor = torch.tensor(list(train_data.values())).cuda(local_rank)
+        label_tensor = torch.tensor(list(label_data.values())).cuda(local_rank)
 
         timestamp = message.timestamp
         get_item_g.set(time.time() - start)
