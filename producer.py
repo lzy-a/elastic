@@ -54,6 +54,7 @@ if __name__ == '__main__':
     feat_sizes_sparse = {feat: len(data[feat].unique()) for feat in sparse_feature}
     feat_sizes.update(feat_sizes_dense)
     feat_sizes.update(feat_sizes_sparse)
+    print(feat_sizes)
 
     for feat in sparse_feature:
         lbe = LabelEncoder()
@@ -64,6 +65,7 @@ if __name__ == '__main__':
     fixlen_feature_columns = [(feat, 'sparse') for feat in sparse_feature] + [(feat, 'dense') for feat in dense_feature]
     dnn_feature_columns = fixlen_feature_columns
     linear_feature_columns = fixlen_feature_columns
+    print(fixlen_feature_columns)
 
     # train, test = train_test_split(data, test_size=0.2, random_state=seed)
     train = data
