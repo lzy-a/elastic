@@ -46,7 +46,6 @@ class DCAPDataset(torch.utils.data.Dataset):
         start = time.time()
         local_rank = int(os.environ["LOCAL_RANK"])
         message = next(consumer)
-        print(message)
         message_dict = json.loads(message.value.decode('utf-8'))
 
         # 现在你可以通过键来访问train和label数据

@@ -10,6 +10,7 @@ from sklearn.metrics import log_loss, roc_auc_score
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from collections import OrderedDict, namedtuple, defaultdict
 import time
+import os
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -147,7 +148,7 @@ class DCAP(nn.Module):
             for feat in self.sparse_feature_columns]
         sparse_input = torch.cat(sparse_embedding, dim=1)
         attn_mask = (torch.triu(torch.ones(len(self.sparse_feature_columns), len(self.sparse_feature_columns))) == 1)
-        attn_mask = attn_mask.float().masked_fill(attn_mask==0, float('-inf')).masked_fill(attn_mask==1, float(0.0)).to(device)
+        attn_mask = attn_mask.float().masked_fill(attn_mask==0, float('-inf')).masked_fill(attn_mask==1, float(0.0)).to(int(os.environ["LOCAL_RANK"]))
         X, X_0 = sparse_input, sparse_input
         output = []
         for layer in self.layers:
