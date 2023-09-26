@@ -13,6 +13,10 @@ import time
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+sparse_feature = ['C' + str(i) for i in range(1, 27)]
+dense_feature = ['I' + str(i) for i in range(1, 14)]
+col_names = ['label'] + dense_feature + sparse_feature
+
 def get_auc(loader, model):
     pred, target = [], []
     model.eval()
