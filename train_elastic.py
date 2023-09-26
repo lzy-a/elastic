@@ -52,8 +52,8 @@ class DCAPDataset(torch.utils.data.Dataset):
         train_data = message_dict['train']
         label_data = message_dict['label']
 
-        train_tensor = torch.tensor(list(train_data.values())).cuda(local_rank)
-        label_tensor = torch.tensor(list(label_data.values())).cuda(local_rank)
+        train_tensor = torch.tensor(list(train_data.values())).float().cuda(local_rank)
+        label_tensor = torch.tensor(list(label_data.values())).float().cuda(local_rank)
 
         timestamp = message.timestamp
         get_item_g.set(time.time() - start)
