@@ -23,6 +23,7 @@ from prometheus_client import start_http_server
 from DCAP import DCAP
 
 lag_g = Gauge('lag', 'kafka lag')
+loss_g = Gauge('loss', 'loss')
 get_item_g = Gauge('get_item', 'read samples cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
@@ -150,6 +151,7 @@ def train():
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
