@@ -139,8 +139,8 @@ def train():
             input_data = sample["input_data"]
             labels = sample["labels"]
             timestamp = sample["timestamp"][0].item() / 1000
-            print(f"[{os.getpid()}] Received input data: ")
-            print(f"[{os.getpid()}] Received labels: ")
+            print(f"[{os.getpid()}] Received input data: {input_data}")
+            print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
             lag_g.set(lag)
             start = time.time()
