@@ -68,11 +68,11 @@ import time
 import warnings
 
 # data generation
-import dlrm_data_pytorch as dp
-
-# For distributed run
-import extend_distributed as ext_dist
-import mlperf_logger
+# import dlrm_data_pytorch as dp
+#
+# # For distributed run
+# import extend_distributed as ext_dist
+# import mlperf_logger
 
 # numpy
 import numpy as np
