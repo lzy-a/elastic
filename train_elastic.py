@@ -21,6 +21,7 @@ from prometheus_client import Gauge
 from prometheus_client import start_http_server
 
 from DCAP import DCAP
+from dlrm_s_pytorch import DLRM_Net
 
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
@@ -114,7 +115,7 @@ def train():
     world_size = int(os.environ["WORLD_SIZE"])
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
     #model = ToyModel().cuda(local_rank)
-    model = DCAP().cuda(local_rank)
+    model = DLRM_Net().cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
