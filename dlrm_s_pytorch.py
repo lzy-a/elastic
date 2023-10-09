@@ -76,7 +76,7 @@ import warnings
 
 # numpy
 import numpy as np
-import optim.rwsadagrad as RowWiseSparseAdagrad
+# import optim.rwsadagrad as RowWiseSparseAdagrad
 import sklearn.metrics
 
 # pytorch
@@ -92,10 +92,10 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard import SummaryWriter
 
 # mixed-dimension trick
-from tricks.md_embedding_bag import md_solver, PrEmbeddingBag
-
-# quotient-remainder trick
-from tricks.qr_embedding_bag import QREmbeddingBag
+# from tricks.md_embedding_bag import md_solver, PrEmbeddingBag
+#
+# # quotient-remainder trick
+# from tricks.qr_embedding_bag import QREmbeddingBag
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
