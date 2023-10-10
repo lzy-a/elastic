@@ -129,7 +129,7 @@ def train():
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3).cuda(local_rank)
+                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
