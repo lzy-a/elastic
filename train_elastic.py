@@ -167,8 +167,9 @@ def train():
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            global steps
             steps.value = steps.value + 1
-            print(f"[{os.getpid()}] steps {steps}")
+            print(f"[{os.getpid()}] steps {steps.value}")
             loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
@@ -209,7 +210,7 @@ def sample_throughput(steps):
         steps0 = steps.value
         time.sleep(10)
         throughput_g.set((steps.value - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
-        print(steps)
+        print(steps.value)
         steps.value = 0
 
 
