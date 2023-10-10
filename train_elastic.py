@@ -168,6 +168,7 @@ def train():
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
             global steps
             steps = steps + 1
+            print(f"[{os.getpid()}] steps {steps}")
             loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
