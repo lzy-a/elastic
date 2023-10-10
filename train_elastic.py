@@ -1,6 +1,8 @@
 import argparse
 import os
 import socket
+import multiprocessing
+from multiprocessing import Process,Value
 import sys
 import time
 from datetime import timedelta
@@ -22,7 +24,6 @@ from prometheus_client import start_http_server
 
 from deepfm import deepfm
 
-steps = 0
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
@@ -128,7 +129,7 @@ def train():
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3).cuda(local_rank)
+                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
@@ -149,6 +150,8 @@ def train():
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     i = 0
+    step = 0
+    step_timer = time.time()
     while True:
         for sample in dataloader:
             input_data = sample["input_data"]
@@ -165,15 +168,15 @@ def train():
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
-            global steps
-            steps = steps + 1
+            step = step + 1
+            if step == 10:
+                throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                step = 0
+                step_timer = time.time()
             loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            # if i % 10 == 0:
-            # lag_file.flush()
-            # proc_file.flush()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
 
@@ -204,14 +207,6 @@ def kafka_setup():
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
 
-
-def sample_throughput():
-    global steps
-    while True:
-        steps0 = steps
-        time.sleep(10)
-        throughput_g.set((steps - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
-        steps = 0
 
 
 def run():
