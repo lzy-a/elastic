@@ -10,26 +10,36 @@ from sklearn.metrics import log_loss, roc_auc_score
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from collections import OrderedDict, namedtuple, defaultdict
 import json
+import multiprocessing
+
+bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
+topic = 'stream-6'
+
+producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
 
 fast_rate = 0.001
 slow_rate = 0.01
+rate = fast_rate
+
+g = Gauge('rate', 'kafka produce samples per sec')
+g.set(1000)
+start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
 
 sparse_feature = ['C' + str(i) for i in range(1, 27)]
 dense_feature = ['I' + str(i) for i in range(1, 14)]
 col_names = ['label'] + dense_feature + sparse_feature
+
+
 def send_message(message, sleep_interval):
     producer.send(topic, value=message)
     print("Sent message: {}".format(message))
-    sleep_interval = sleep_interval + random.uniform(-0.3*sleep_interval, 0.3*sleep_interval)
-    g.set(1.0/sleep_interval)
+    sleep_interval = sleep_interval + random.uniform(-0.3 * sleep_interval, 0.3 * sleep_interval)
+    g.set(1.0 / sleep_interval)
     time.sleep(sleep_interval)
 
-def dosth(data):
+
+def process_data(data):
     start = time.time()
-    end = time.time()
-    span = end - start
-    start = end
-    print(f"read {span}")
     data[sparse_feature] = data[sparse_feature].fillna('-1', )
     end = time.time()
     span = end - start
@@ -69,21 +79,32 @@ def dosth(data):
         label_data = label_row[1]
         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
         message = json.dumps(message_dict).encode('utf-8')
+        send_message(message, fast_rate)
         print("Sent message: {}".format(message))
-        end = time.time()
 
+def rate_cntrl():
+    global rate
+    while True:
+        if rate == fast_rate:
+            time.sleep(180)
+            rate = slow_rate
+        else:
+            time.sleep(120)
+            rate = fast_rate
 
 if __name__ == '__main__':
-
-    sparse_feature = ['C' + str(i) for i in range(1, 27)]
-    dense_feature = ['I' + str(i) for i in range(1, 14)]
-    col_names = ['label'] + dense_feature + sparse_feature
-
+    p = multiprocessing.Process(target=rate_cntrl)
+    p.start()
     while True:
         start = time.time()
-        data = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t',chunksize=1000)
+        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1000)
         end = time.time()
         span = end - start
         start = end
-        print(f"read {span}")
-        dosth(data)
+        print(f"reader {span}")
+        for data in reader:
+            end = time.time()
+            span = end - start
+            start = end
+            print(f"read {span}")
+            process_data(data)
