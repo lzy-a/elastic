@@ -1,6 +1,7 @@
 import argparse
 import os
 import socket
+import multiprocessing
 import sys
 import time
 from datetime import timedelta
@@ -215,6 +216,8 @@ def sample_throughput():
 
 
 def run():
+    p = multiprocessing.Process(target=sample_throughput)
+    p.start()
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
