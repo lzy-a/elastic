@@ -24,7 +24,6 @@ from prometheus_client import start_http_server
 
 from deepfm import deepfm
 
-steps = Value('i', 0)
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
@@ -151,6 +150,8 @@ def train():
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     i = 0
+    step = 0
+    step_timer = time.time()
     while True:
         for sample in dataloader:
             input_data = sample["input_data"]
@@ -167,9 +168,11 @@ def train():
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
-            global steps
-            steps.value = steps.value + 1
-            print(f"[{os.getpid()}] steps {steps.value}")
+            step = step + 1
+            if step == 10:
+                throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                step = 0
+                step_timer = time.time()
             loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
@@ -205,19 +208,8 @@ def kafka_setup():
         time.sleep(0.1)
 
 
-def sample_throughput(steps):
-    while True:
-        steps0 = steps.value
-        print(f"steps0:  {steps.value}")
-        time.sleep(10)
-        throughput_g.set((steps.value - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
-        print(f"steps1:  {steps.value}")
-        steps.value = 0
-
 
 def run():
-    p = multiprocessing.Process(target=sample_throughput,args=(steps,))
-    p.start()
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
