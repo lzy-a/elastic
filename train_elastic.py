@@ -172,9 +172,6 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            # if i % 10 == 0:
-            # lag_file.flush()
-            # proc_file.flush()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
             i += 1
 
@@ -210,8 +207,10 @@ def sample_throughput():
     global steps
     while True:
         steps0 = steps
+        print(steps0)
         time.sleep(10)
         throughput_g.set((steps - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
+        print(steps)
         steps = 0
 
 
