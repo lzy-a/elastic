@@ -208,9 +208,10 @@ def kafka_setup():
 def sample_throughput(steps):
     while True:
         steps0 = steps.value
+        print(f"steps0:  {steps.value}")
         time.sleep(10)
         throughput_g.set((steps.value - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
-        print(steps.value)
+        print(f"steps1:  {steps.value}")
         steps.value = 0
 
 
