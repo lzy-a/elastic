@@ -17,6 +17,7 @@ topic = 'stream-6'
 
 producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
 
+cnt = 0
 fast_rate = 0.001
 slow_rate = 0.01
 rate = fast_rate
@@ -31,10 +32,12 @@ col_names = ['label'] + dense_feature + sparse_feature
 
 
 def send_message(message, sleep_interval):
+    global cnt
+    cnt = cnt + 1
     producer.send(topic, value=message)
     print("Sent message: {}".format(message))
     sleep_interval = sleep_interval + random.uniform(-0.3 * sleep_interval, 0.3 * sleep_interval)
-    g.set(1.0 / sleep_interval)
+    # g.set(1.0 / sleep_interval)
     time.sleep(sleep_interval)
 
 
@@ -82,6 +85,7 @@ def process_data(data):
         send_message(message, fast_rate)
         print("Sent message: {}".format(message))
 
+
 def rate_cntrl():
     global rate
     while True:
@@ -92,9 +96,20 @@ def rate_cntrl():
             time.sleep(120)
             rate = fast_rate
 
+def rate_culc():
+    global cnt
+    while True:
+        cnt1 = cnt
+        time.sleep(10)
+        g.set((cnt-cnt1)/10)
+        cnt = 0
+
+
 if __name__ == '__main__':
     p = multiprocessing.Process(target=rate_cntrl)
     p.start()
+    p1 = multiprocessing.Process(target=rate_culc)
+    p1.start()
     while True:
         start = time.time()
         reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1000)
