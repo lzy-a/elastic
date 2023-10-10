@@ -22,6 +22,8 @@ from prometheus_client import start_http_server
 
 from deepfm import deepfm
 
+steps = 0
+throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
 get_item_g = Gauge('get_item', 'read samples cost time')
@@ -38,6 +40,7 @@ consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=gr
 consumer.subscribe([topic])
 
 global_batch_size = 128
+
 
 class DCAPDataset(torch.utils.data.Dataset):
     def __len__(self):
@@ -63,6 +66,8 @@ class DCAPDataset(torch.utils.data.Dataset):
             'labels': label_tensor,
             'timestamp': timestamp
         }
+
+
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
@@ -113,8 +118,12 @@ def train():
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
-    #model = ToyModel().cuda(local_rank)
-    feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1, 'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24, 'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27, 'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547, 'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
+    # model = ToyModel().cuda(local_rank)
+    feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
+                  'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
+                  'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
+                  'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547,
+                  'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
@@ -156,6 +165,8 @@ def train():
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            global steps
+            steps = steps + 1
             loss_g.set(loss.item())
             start = time.time()
             optimizer.step()
@@ -194,21 +205,13 @@ def kafka_setup():
         time.sleep(0.1)
 
 
-def on_assign(consumer, partitions):
-    ws = os.environ["WORLD_SIZE"]
-    member_count = 0
-    while member_count < int(ws):
-        group_description = client.describe_consumer_groups([group])
-        print(group_description)
-        for group_des in group_description:
-            if group_des.group != group or group_des.state != 'Stable':
-                continue
-            else:
-                member_count = len(group_des.members)
-                break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
-        time.sleep(0.1)
+def sample_throughput():
+    global steps
+    while True:
+        steps0 = steps
+        time.sleep(10)
+        throughput_g.set((steps - steps0) * int(os.environ["WORLD_SIZE"]) * global_batch_size / 10)
+        steps = 0
 
 
 def run():
