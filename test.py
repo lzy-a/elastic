@@ -123,7 +123,7 @@ if __name__ == "__main__":
             # y = y.to(device).float()
 
             # index of continous features are zero
-            Xi_coutinous = np.zeros_like(x[:,13])
+            Xi_coutinous = np.zeros_like(x[:,:13])
             Xi_categorial = x[:,13:]
             print("Xi_coutinous shape: ", Xi_coutinous.shape)
             print("Xi_categorial shape: ", Xi_categorial.shape)
