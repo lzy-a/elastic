@@ -133,6 +133,8 @@ if __name__ == "__main__":
             # 将类别特征和连续特征合并在一起
             Xi = torch.cat([Xi_categorial, Xi_continuous], dim=1).to(device)
             Xv = torch.cat([Xv_categorial, Xv_continuous], dim=1).to(device)
+            print("Xi.shape: ", Xi.shape)
+            print("Xv.shape: ", Xv.shape)
             y_hat = model(Xi, Xv)
 
             optimizer.zero_grad()
