@@ -80,7 +80,12 @@ if __name__ == "__main__":
     #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
     #                l2_reg_linear=1e-3, device=device).to(device)
 
-    fixlen_feature_columns = [(feat, 'sparse') for feat in sparse_features] + [(feat, 'dense') for feat in dense_features]
+    # fixlen_feature_columns = [(feat, 'sparse') for feat in sparse_features] + [(feat, 'dense') for feat in dense_features]
+    fixlen_feature_columns = [SparseFeat(feat, vocabulary_size=df[feat].nunique(), embedding_dim=4)
+                              for i, feat in enumerate(sparse_features)] + [DenseFeat(feat, 1, )
+                                                                            for feat in dense_features]
+
+
     dnn_feature_columns = fixlen_feature_columns
     linear_feature_columns = fixlen_feature_columns
 
