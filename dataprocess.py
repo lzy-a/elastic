@@ -111,48 +111,48 @@ def preprocess(datadir, outdir):
     random.seed(0)
 
     # Saving the data used for training.
-    with open(os.path.join(outdir, 'train.txt'), 'w') as out_train:
-        with open(os.path.join(datadir, 'train.txt'), 'r') as f:
-            for line in f:
-                features = line.rstrip('\n').split('\t')
+    # with open(os.path.join(outdir, 'train.txt'), 'w') as out_train:
+    #     with open(os.path.join(datadir, 'train.txt'), 'r') as f:
+    #         for line in f:
+    #             features = line.rstrip('\n').split('\t')
+    #
+    #             continous_vals = []
+    #             for i in range(0, len(continous_features)):
+    #                 val = dists.gen(i, features[continous_features[i]])
+    #                 continous_vals.append("{0:.6f}".format(val).rstrip('0')
+    #                                       .rstrip('.'))
+    #             categorial_vals = []
+    #             for i in range(0, len(categorial_features)):
+    #                 #                    val = dicts.gen(i, features[categorial_features[
+    #                 #                        i]]) + categorial_feature_offset[i]
+    #                 val = dicts.gen(i, features[categorial_features[i]])  # 修改过
+    #                 categorial_vals.append(str(val))
+    #
+    #             continous_vals = ','.join(continous_vals)
+    #             categorial_vals = ','.join(categorial_vals)
+    #             label = features[0]
+    #             out_train.write(','.join([continous_vals, categorial_vals, label]) + '\n')
 
-                continous_vals = []
-                for i in range(0, len(continous_features)):
-                    val = dists.gen(i, features[continous_features[i]])
-                    continous_vals.append("{0:.6f}".format(val).rstrip('0')
-                                          .rstrip('.'))
-                categorial_vals = []
-                for i in range(0, len(categorial_features)):
-                    #                    val = dicts.gen(i, features[categorial_features[
-                    #                        i]]) + categorial_feature_offset[i]
-                    val = dicts.gen(i, features[categorial_features[i]])  # 修改过
-                    categorial_vals.append(str(val))
-
-                continous_vals = ','.join(continous_vals)
-                categorial_vals = ','.join(categorial_vals)
-                label = features[0]
-                out_train.write(','.join([continous_vals, categorial_vals, label]) + '\n')
-
-    with open(os.path.join(outdir, 'test.txt'), 'w') as out:
-        with open(os.path.join(datadir, 'test.txt'), 'r') as f:
-            for line in f:
-                features = line.rstrip('\n').split('\t')
-
-                continous_vals = []
-                for i in range(0, len(continous_features)):
-                    val = dists.gen(i, features[continous_features[i] - 1])
-                    continous_vals.append("{0:.6f}".format(val).rstrip('0')
-                                          .rstrip('.'))
-                categorial_vals = []
-                for i in range(0, len(categorial_features)):
-                    #                    val = dicts.gen(i, features[categorial_features[
-                    #                        i] - 1]) + categorial_feature_offset[i]
-                    val = dicts.gen(i, features[categorial_features[i] - 1])  # 修改过
-                    categorial_vals.append(str(val))
-
-                continous_vals = ','.join(continous_vals)
-                categorial_vals = ','.join(categorial_vals)
-                out.write(','.join([continous_vals, categorial_vals]) + '\n')
+    # with open(os.path.join(outdir, 'test.txt'), 'w') as out:
+    #     with open(os.path.join(datadir, 'test.txt'), 'r') as f:
+    #         for line in f:
+    #             features = line.rstrip('\n').split('\t')
+    #
+    #             continous_vals = []
+    #             for i in range(0, len(continous_features)):
+    #                 val = dists.gen(i, features[continous_features[i] - 1])
+    #                 continous_vals.append("{0:.6f}".format(val).rstrip('0')
+    #                                       .rstrip('.'))
+    #             categorial_vals = []
+    #             for i in range(0, len(categorial_features)):
+    #                 #                    val = dicts.gen(i, features[categorial_features[
+    #                 #                        i] - 1]) + categorial_feature_offset[i]
+    #                 val = dicts.gen(i, features[categorial_features[i] - 1])  # 修改过
+    #                 categorial_vals.append(str(val))
+    #
+    #             continous_vals = ','.join(continous_vals)
+    #             categorial_vals = ','.join(categorial_vals)
+    #             out.write(','.join([continous_vals, categorial_vals]) + '\n')
 
 
 if __name__ == "__main__":
