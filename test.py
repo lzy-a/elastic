@@ -11,8 +11,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 import random
-from deepctr_torch.inputs import SparseFeat, DenseFeat, get_feature_names
-from deepctr_torch.models import DeepFM
+# from deepctr_torch.inputs import SparseFeat, DenseFeat, get_feature_names
+# from deepctr_torch.models import DeepFM
+from deepfm1 import DeepFM
 import time
 
 
@@ -61,11 +62,11 @@ if __name__ == "__main__":
     mms = MinMaxScaler(feature_range=(0, 1))
     df[dense_features] = mms.fit_transform(df[dense_features])
 
-    # feat_size1 = {feat: 1 for feat in dense_features}
-    # feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
-    # feat_sizes = {}
-    # feat_sizes.update(feat_size1)
-    # feat_sizes.update(feat_size2)
+    feat_size1 = {feat: 1 for feat in dense_features}
+    feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
+    feat_sizes = {}
+    feat_sizes.update(feat_size1)
+    feat_sizes.update(feat_size2)
 
     # print(df.head(5))
     # print(feat_sizes)
@@ -74,24 +75,26 @@ if __name__ == "__main__":
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
-    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    device = 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device = 'cpu'
     # model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
     #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
     #                l2_reg_linear=1e-3, device=device).to(device)
 
     # fixlen_feature_columns = [(feat, 'sparse') for feat in sparse_features] + [(feat, 'dense') for feat in dense_features]
-    fixlen_feature_columns = [SparseFeat(feat, vocabulary_size=df[feat].nunique(), embedding_dim=4)
-                              for i, feat in enumerate(sparse_features)] + [DenseFeat(feat, 1, )
-                                                                            for feat in dense_features]
-
-
-    dnn_feature_columns = fixlen_feature_columns
-    linear_feature_columns = fixlen_feature_columns
+    # fixlen_feature_columns = [SparseFeat(feat, vocabulary_size=df[feat].nunique(), embedding_dim=4)
+    #                           for i, feat in enumerate(sparse_features)] + [DenseFeat(feat, 1, )
+    #                                                                         for feat in dense_features]
+    #
+    #
+    # dnn_feature_columns = fixlen_feature_columns
+    # linear_feature_columns = fixlen_feature_columns
 
     # feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
-    model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary')
+    # model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary')
+    feature_sizes = list(feat_sizes.values())
+    model = DeepFM(feature_sizes=feature_sizes)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
@@ -118,8 +121,9 @@ if __name__ == "__main__":
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
-
-            y_hat = model(x)
+            xi = x[:13].unsqueeze(-1)
+            xv = x[13:].unsqueeze(-1)
+            y_hat = model(xi,xv)
 
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
