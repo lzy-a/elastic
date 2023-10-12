@@ -110,7 +110,7 @@ def save_checkpoint(epoch, model, optimizer, path):
 
 
 def load_checkpoint(path):
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(pathrm)
     return checkpoint
 
 
