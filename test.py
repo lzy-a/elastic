@@ -62,11 +62,14 @@ if __name__ == "__main__":
     mms = MinMaxScaler(feature_range=(0, 1))
     df[dense_features] = mms.fit_transform(df[dense_features])
 
-    feat_size1 = {feat: 1 for feat in dense_features}
-    feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
-    feat_sizes = {}
-    feat_sizes.update(feat_size1)
-    feat_sizes.update(feat_size2)
+    feature_sizes = np.loadtxt('./data/feature_sizes.txt', delimiter=',')
+    feature_sizes = [int(x) for x in feature_sizes]
+    print(feature_sizes)
+    # feat_size1 = {feat: 1 for feat in dense_features}
+    # feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
+    # feat_sizes = {}
+    # feat_sizes.update(feat_size1)
+    # feat_sizes.update(feat_size2)
 
     # print(df.head(5))
     # print(feat_sizes)
@@ -93,7 +96,7 @@ if __name__ == "__main__":
     # feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
     # model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary')
-    feature_sizes = list(feat_sizes.values())
+
     model = DeepFM(feature_sizes=feature_sizes)
 
     train_label = pd.DataFrame(train['label'])
