@@ -113,9 +113,9 @@ class DeepFM(nn.Module):
         fm_first_order_emb_arr = []
         for i, emb in enumerate(self.fm_first_order_models):
             if i <= 12:
+                Xi_tem = Xi[:, i, :].to(device=self.device, dtype=torch.float)
                 print(torch.sum(emb(Xi_tem).unsqueeze(1), 1).t().shape)
                 print(Xv[:, i].shape)
-                Xi_tem = Xi[:, i, :].to(device=self.device, dtype=torch.float)
                 fm_first_order_emb_arr.append((torch.sum(emb(Xi_tem).unsqueeze(1), 1).t() * Xv[:, i]).t())
             else:
                 Xi_tem = Xi[:, i, :].to(device=self.device, dtype=torch.long)
