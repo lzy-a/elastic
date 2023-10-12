@@ -121,8 +121,18 @@ if __name__ == "__main__":
         for index, (x, y) in enumerate(train_loader):
             # x = x.to(device).float()
             # y = y.to(device).float()
-            xi = x[:, :13].unsqueeze(-1).to(device).long()
-            xv = x[:, 13:].unsqueeze(-1).to(device).float()
+
+            # index of continous features are zero
+            Xi_coutinous = np.zeros_like(x[:,13])
+            Xi_categorial = x[:,13:]
+            xi = torch.from_numpy(np.concatenate((Xi_coutinous, Xi_categorial)).astype(np.int32)).unsqueeze(-1)
+
+            # value of categorial features are one (one hot features)
+            Xv_categorial = np.ones_like(x[:,13:])
+            Xv_coutinous = x[:,:13]
+            xv = torch.from_numpy(np.concatenate((Xv_coutinous, Xv_categorial)).astype(np.int32))
+            # xi = x[:, :13].unsqueeze(-1).to(device).long()
+            # xv = x[:, 13:].unsqueeze(-1).to(device).float()
             print("x shape: ", x.shape)
             print("xi shape: ", xi.shape)
             print("xv shape: ", xv.shape)
