@@ -78,7 +78,8 @@ if __name__ == "__main__":
     # model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
     #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
     #                l2_reg_linear=1e-3, device=device).to(device)
-    model = DeepFM(feat_sizes)
+    feature_sizes = list(feat_sizes.values())
+    model = DeepFM(feature_sizes=feature_sizes)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
