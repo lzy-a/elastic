@@ -131,8 +131,8 @@ if __name__ == "__main__":
             Xv_continuous = x[:, 13:].unsqueeze(-1)
 
             # 将类别特征和连续特征合并在一起
-            Xi = torch.cat([Xi_categorial, Xi_continuous], dim=1)
-            Xv = torch.cat([Xv_categorial, Xv_continuous], dim=1)
+            Xi = torch.cat([Xi_categorial, Xi_continuous], dim=1).to(device)
+            Xv = torch.cat([Xv_categorial, Xv_continuous], dim=1).to(device)
             y_hat = model(Xi, Xv)
 
             optimizer.zero_grad()
