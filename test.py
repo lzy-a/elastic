@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     # feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
-    model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary', device=device).to(device)
+    model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary', device=device)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
