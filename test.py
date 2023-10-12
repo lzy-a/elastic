@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
     #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
     #                l2_reg_linear=1e-3, device=device).to(device)
-    model = DeepFM(feat_sizes,)
+    model = DeepFM(feat_sizes)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
@@ -101,12 +101,12 @@ if __name__ == "__main__":
         total_loss_epoch = 0.0
         total_tmp = 0
 
-        model.train()
+        model.train().to(device)
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
 
-            y_hat = model(x)
+            y_hat = model(x[:13],x[13:])
 
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
