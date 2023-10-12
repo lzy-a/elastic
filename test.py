@@ -13,7 +13,7 @@ import numpy as np
 import random
 # from deepctr_torch.inputs import SparseFeat, DenseFeat, get_feature_names
 # from deepctr_torch.models import DeepFM
-from deepfm1 import DeepFM
+from deepfm_hyfred import DeepFM
 import time
 
 
