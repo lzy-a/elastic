@@ -156,7 +156,7 @@ def preprocess(datadir, outdir):
 
 
 if __name__ == "__main__":
-    preprocess('../data/raw', '../data')
+    preprocess('./data/raw', './data')
 
 # for test 0923
 
