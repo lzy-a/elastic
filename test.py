@@ -123,22 +123,33 @@ if __name__ == "__main__":
             # y = y.to(device).float()
 
             # index of continous features are zero
-            Xi_coutinous = np.zeros_like(x[:,:13])
-            Xi_categorial = x[:,13:]
-            print("Xi_coutinous shape: ", Xi_coutinous.shape)
-            print("Xi_categorial shape: ", Xi_categorial.shape)
-            xi = torch.from_numpy(np.concatenate((Xi_coutinous, Xi_categorial)).astype(np.int32)).unsqueeze(-1)
+            # Xi_coutinous = np.zeros_like(x[:,:13])
+            # Xi_categorial = x[:,13:]
+            # print("Xi_coutinous shape: ", Xi_coutinous.shape)
+            # print("Xi_categorial shape: ", Xi_categorial.shape)
+            # xi = torch.from_numpy(np.concatenate((Xi_coutinous, Xi_categorial)).astype(np.int32)).unsqueeze(-1)
+            #
+            # # value of categorial features are one (one hot features)
+            # Xv_categorial = np.ones_like(x[:,13:])
+            # Xv_coutinous = x[:,:13]
+            # xv = torch.from_numpy(np.concatenate((Xv_coutinous, Xv_categorial)).astype(np.int32))
+            # # xi = x[:, :13].unsqueeze(-1).to(device).long()
+            # # xv = x[:, 13:].unsqueeze(-1).to(device).float()
+            # print("x shape: ", x.shape)
+            # print("xi shape: ", xi.shape)
+            # print("xv shape: ", xv.shape)
+            # 对于类别特征，索引是特征值本身，值被设置为1
+            Xi_categorial = x[:, :13].long().unsqueeze(-1)
+            Xv_categorial = torch.ones_like(Xi_categorial).float()
 
-            # value of categorial features are one (one hot features)
-            Xv_categorial = np.ones_like(x[:,13:])
-            Xv_coutinous = x[:,:13]
-            xv = torch.from_numpy(np.concatenate((Xv_coutinous, Xv_categorial)).astype(np.int32))
-            # xi = x[:, :13].unsqueeze(-1).to(device).long()
-            # xv = x[:, 13:].unsqueeze(-1).to(device).float()
-            print("x shape: ", x.shape)
-            print("xi shape: ", xi.shape)
-            print("xv shape: ", xv.shape)
-            y_hat = model(xi, xv)
+            # 对于连续特征，索引被设置为0，值就是特征值本身
+            Xi_continuous = torch.zeros_like(x[:, 13:]).long().unsqueeze(-1)
+            Xv_continuous = x[:, 13:].unsqueeze(-1)
+
+            # 将类别特征和连续特征合并在一起
+            Xi = torch.cat([Xi_categorial, Xi_continuous], dim=1)
+            Xv = torch.cat([Xv_categorial, Xv_continuous], dim=1)
+            y_hat = model(Xi, Xv)
 
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
