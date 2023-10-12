@@ -125,6 +125,8 @@ if __name__ == "__main__":
             # index of continous features are zero
             Xi_coutinous = np.zeros_like(x[:,13])
             Xi_categorial = x[:,13:]
+            print("Xi_coutinous shape: ", Xi_coutinous.shape)
+            print("Xi_categorial shape: ", Xi_categorial.shape)
             xi = torch.from_numpy(np.concatenate((Xi_coutinous, Xi_categorial)).astype(np.int32)).unsqueeze(-1)
 
             # value of categorial features are one (one hot features)
