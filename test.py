@@ -119,10 +119,10 @@ if __name__ == "__main__":
 
         model.train().to(device)
         for index, (x, y) in enumerate(train_loader):
-            x = x.to(device).float()
-            y = y.to(device).float()
-            xi = x[:13].unsqueeze(-1)
-            xv = x[13:].unsqueeze(-1)
+            # x = x.to(device).float()
+            # y = y.to(device).float()
+            xi = x[:13].unsqueeze(-1).to(device).long()
+            xv = x[13:].unsqueeze(-1).to(device).float()
             y_hat = model(xi,xv)
 
             optimizer.zero_grad()
