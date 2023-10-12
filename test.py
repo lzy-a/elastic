@@ -123,6 +123,7 @@ if __name__ == "__main__":
             # y = y.to(device).float()
             xi = x[:13].unsqueeze(-1).to(device).long()
             xv = x[13:].unsqueeze(-1).to(device).float()
+            print("x shape: ", x.shape)
             print("xi shape: ", xi.shape)
             print("xv shape: ", xv.shape)
             y_hat = model(xi,xv)
