@@ -28,7 +28,7 @@ class DeepFM(nn.Module):
 
     def __init__(self, feature_sizes, embedding_size=4,
                  hidden_dims=[32, 32], num_classes=1, dropout=[0.5, 0.5],
-                 use_cuda=True, verbose=False):
+                 use_cuda=True, verbose=False, device='cuda'):
         """
         Initialize a new network
 
@@ -53,10 +53,7 @@ class DeepFM(nn.Module):
         """
             check if use cuda
         """
-        if use_cuda and torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        else:
-            self.device = torch.device('cpu')
+        self.device = device
         """
             init fm part
         """
