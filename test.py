@@ -84,7 +84,7 @@ if __name__ == "__main__":
     dnn_feature_columns = fixlen_feature_columns
     linear_feature_columns = fixlen_feature_columns
 
-    feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
+    # feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
     model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary', device=device).to(device)
 
