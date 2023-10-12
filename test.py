@@ -11,7 +11,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 import random
-from deepfm import deepfm
+from deepfm1 import DeepFM
 import time
 
 
@@ -31,7 +31,7 @@ def get_auc(loader, model):
 
 if __name__ == "__main__":
 
-    batch_size = 1024
+    batch_size = 128
     lr = 0.00005
     wd = 0.00001
     epoches = 100
@@ -75,9 +75,10 @@ if __name__ == "__main__":
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
-                   dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=device).to(device)
+    # model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
+    #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
+    #                l2_reg_linear=1e-3, device=device).to(device)
+    model = DeepFM(feat_sizes,)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
