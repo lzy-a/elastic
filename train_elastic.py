@@ -21,6 +21,7 @@ from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
+import signal
 
 from deepfm import deepfm
 
@@ -134,9 +135,12 @@ def train():
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
+    global ddp_model
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
     # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
+    global optimizer
+    global ckp_path
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
@@ -154,6 +158,7 @@ def train():
     dataset = DCAPDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
+    global i
     i = 0
     step = 0
     step_timer = time.time()
@@ -222,6 +227,8 @@ def kafka_setup():
 
 
 def run():
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
@@ -238,6 +245,11 @@ def run():
     # kafka_warmup()
     train()
     dist.destroy_process_group()
+
+def signal_handler(sig, frame):
+    print('Signal received, saving checkpoint...')
+    save_checkpoint(i, ddp_model, optimizer, ckp_path)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
