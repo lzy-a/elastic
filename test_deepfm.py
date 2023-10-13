@@ -46,7 +46,7 @@ if __name__ == "__main__":
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
-    df = pd.read_csv('data/train.txt', names=col_names, sep='\t')
+    df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
     feature_names = dense_features + sparse_features
 
     df[sparse_features] = df[sparse_features].fillna('-1', )
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=device).to(device)
+                   l2_reg_linear=1e-3, device=device)
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
