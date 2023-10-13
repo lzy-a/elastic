@@ -87,7 +87,7 @@ def process_data(data):
         if i % 1000 == 0:
             p = True
         send_message(message, fast_rate, p)
-        print("Sent message: {}".format(message))
+        p = False
 
 
 def rate_cntrl():
