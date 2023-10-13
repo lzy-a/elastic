@@ -31,11 +31,12 @@ dense_feature = ['I' + str(i) for i in range(1, 14)]
 col_names = ['label'] + dense_feature + sparse_feature
 
 
-def send_message(message, sleep_interval):
+def send_message(message, sleep_interval, p):
     global cnt
     cnt = cnt + 1
     producer.send(topic, value=message)
-    print("Sent message: {}".format(message))
+    if p:
+        print("Sent message: {}".format(message))
     sleep_interval = sleep_interval + random.uniform(-0.3 * sleep_interval, 0.3 * sleep_interval)
     # g.set(1.0 / sleep_interval)
     time.sleep(sleep_interval)
@@ -76,13 +77,16 @@ def process_data(data):
     span = end - start
     start = end
     print(f"drop {span}")
-
+    i = 0
+    p = False
     for train_row, label_row in zip(train.iterrows(), train_label.iterrows()):
         train_data = train_row[1]
         label_data = label_row[1]
         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
         message = json.dumps(message_dict).encode('utf-8')
-        send_message(message, fast_rate)
+        if i % 1000 == 0:
+            p = True
+        send_message(message, fast_rate, p)
         print("Sent message: {}".format(message))
 
 
@@ -96,12 +100,13 @@ def rate_cntrl():
             time.sleep(120)
             rate = fast_rate
 
+
 def rate_culc():
     global cnt
     while True:
         cnt1 = cnt
         time.sleep(10)
-        g.set((cnt-cnt1)/10)
+        g.set((cnt - cnt1) / 10)
         cnt = 0
 
 
