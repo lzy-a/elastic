@@ -18,7 +18,7 @@ topic = 'stream-6'
 producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
 
 cnt = 0
-fast_rate = 0.001
+fast_rate = 0.0001
 slow_rate = 0.01
 rate = fast_rate
 
@@ -38,7 +38,8 @@ def send_message(message, sleep_interval, p):
         print("Sent message: {}".format(message))
     sleep_interval = sleep_interval + random.uniform(-0.3 * sleep_interval, 0.3 * sleep_interval)
     # g.set(1.0 / sleep_interval)
-    time.sleep(sleep_interval)
+    if sleep_interval > 0.001:
+        time.sleep(sleep_interval)
 
 
 def process_data(data):
