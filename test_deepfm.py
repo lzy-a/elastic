@@ -46,7 +46,8 @@ if __name__ == "__main__":
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
-    df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
+    df = pd.read_csv('data/dac_sample.txt', names=col_names, sep='\t')
+    # df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
     feature_names = dense_features + sparse_features
 
     df[sparse_features] = df[sparse_features].fillna('-1', )
