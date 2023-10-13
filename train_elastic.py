@@ -118,8 +118,8 @@ def load_checkpoint(path):
 
 
 def train():
-    lr = 0.00005
-    wd = 0.00001
+    lr = 0.0005
+    wd = 0.0001
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
