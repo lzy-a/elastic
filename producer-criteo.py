@@ -23,7 +23,6 @@ slow_rate = 0.01
 rate = fast_rate
 
 g = Gauge('rate', 'kafka produce samples per sec')
-g.set(1000)
 start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
 
 sparse_feature = ['C' + str(i) for i in range(1, 27)]
@@ -86,8 +85,11 @@ def process_data(data):
         message = json.dumps(message_dict).encode('utf-8')
         if i % 1000 == 0:
             p = True
+            g.set(1000 / (time.time()) - start)
+            start = time.time()
         send_message(message, fast_rate, p)
         p = False
+        i = i + 1
 
 
 def rate_cntrl():
