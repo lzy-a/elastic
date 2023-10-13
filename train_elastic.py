@@ -2,7 +2,7 @@ import argparse
 import os
 import socket
 import multiprocessing
-from multiprocessing import Process,Value
+from multiprocessing import Process, Value
 import sys
 import time
 from datetime import timedelta
@@ -27,7 +27,9 @@ from deepfm import deepfm
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
-get_item_g = Gauge('get_item', 'read samples cost time')
+save_g = Gauge('save', 'save cost time')
+get_item_g = Gauge('get_item', 'read a sample cost time')
+get_sample_g = Gauge('get_sample', 'read samples cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
@@ -155,10 +157,14 @@ def train():
     i = 0
     step = 0
     step_timer = time.time()
+    model.train().to(local_rank)
     while True:
+        start = time.time()
         for sample in dataloader:
             input_data = sample["input_data"]
             labels = sample["labels"]
+            get_sample_time = time.time() - start
+            get_sample_g.set(get_sample_time)
             timestamp = sample["timestamp"][0].item() / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
@@ -180,7 +186,10 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
+            start = time.time()
             save_checkpoint(i, ddp_model, optimizer, ckp_path)
+            save_g.set(time.time() - start)
+            start = time.time()
             i += 1
 
 
@@ -209,7 +218,6 @@ def kafka_setup():
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
         msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
-
 
 
 def run():
