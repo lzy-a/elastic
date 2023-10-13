@@ -186,9 +186,10 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            start = time.time()
-            save_checkpoint(i, ddp_model, optimizer, ckp_path)
-            save_g.set(time.time() - start)
+            if i % 100 == 0:
+                start = time.time()
+                save_checkpoint(i, ddp_model, optimizer, ckp_path)
+                save_g.set(time.time() - start)
             start = time.time()
             i += 1
 
