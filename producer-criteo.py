@@ -85,7 +85,7 @@ def process_data(data):
         label_data = label_row[1]
         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
         message = json.dumps(message_dict).encode('utf-8')
-        if i % 1000 == 0:
+        if i % 1000 == 999:
             p = True
             g.set(1000 / (time.time() - rate_timer))
             rate_timer = time.time()
@@ -97,7 +97,7 @@ def process_data(data):
 if __name__ == '__main__':
     while True:
         start = time.time()
-        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1000)
+        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1024)
         end = time.time()
         span = end - start
         start = end
