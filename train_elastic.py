@@ -166,8 +166,8 @@ def train():
             lag_g.set(lag)
             start = time.time()
             optimizer.zero_grad()
-            outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
-            loss = loss_fn(outputs, labels)
+            outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
+            loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
