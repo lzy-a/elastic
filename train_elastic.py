@@ -2,7 +2,7 @@ import argparse
 import os
 import socket
 import multiprocessing
-from multiprocessing import Process,Value
+from multiprocessing import Process, Value
 import sys
 import time
 from datetime import timedelta
@@ -21,13 +21,16 @@ from kafka import KafkaConsumer
 from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
+import signal
 
 from deepfm import deepfm
 
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
-get_item_g = Gauge('get_item', 'read samples cost time')
+save_g = Gauge('save', 'save cost time')
+get_item_g = Gauge('get_item', 'read a sample cost time')
+get_sample_g = Gauge('get_sample', 'read samples cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
@@ -40,7 +43,7 @@ client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
 
-global_batch_size = 128
+global_batch_size = 1024
 
 
 class DCAPDataset(torch.utils.data.Dataset):
@@ -115,6 +118,8 @@ def load_checkpoint(path):
 
 
 def train():
+    lr = 0.00005
+    wd = 0.00001
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
@@ -130,9 +135,13 @@ def train():
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
+    global ddp_model
     ddp_model = DDP(model, [local_rank])
-    loss_fn = nn.MSELoss()
-    optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
+    loss_fn = nn.BCELoss(reduction='mean')
+    # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
+    global optimizer
+    global ckp_path
+    optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
         print(f"load checkpoint from {ckp_path}")
@@ -149,13 +158,18 @@ def train():
     dataset = DCAPDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
+    global i
     i = 0
     step = 0
     step_timer = time.time()
+    model.train().to(local_rank)
     while True:
+        start = time.time()
         for sample in dataloader:
             input_data = sample["input_data"]
             labels = sample["labels"]
+            get_sample_time = time.time() - start
+            get_sample_g.set(get_sample_time)
             timestamp = sample["timestamp"][0].item() / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
@@ -163,8 +177,8 @@ def train():
             lag_g.set(lag)
             start = time.time()
             optimizer.zero_grad()
-            outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
-            loss = loss_fn(outputs, labels)
+            outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
+            loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             grad_span_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
@@ -177,7 +191,11 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            save_checkpoint(i, ddp_model, optimizer, ckp_path)
+            if i % 100 == 0:
+                start = time.time()
+                save_checkpoint(i, ddp_model, optimizer, ckp_path)
+                save_g.set(time.time() - start)
+            start = time.time()
             i += 1
 
 
@@ -208,8 +226,9 @@ def kafka_setup():
         time.sleep(0.1)
 
 
-
 def run():
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
@@ -226,6 +245,11 @@ def run():
     # kafka_warmup()
     train()
     dist.destroy_process_group()
+
+def signal_handler(sig, frame):
+    print('Signal received, saving checkpoint...')
+    save_checkpoint(i, ddp_model, optimizer, ckp_path)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
