@@ -40,7 +40,7 @@ client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 consumer.subscribe([topic])
 
-global_batch_size = 128
+global_batch_size = 1024
 
 
 class DCAPDataset(torch.utils.data.Dataset):
@@ -115,6 +115,8 @@ def load_checkpoint(path):
 
 
 def train():
+    lr = 0.00005
+    wd = 0.00001
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
@@ -131,8 +133,9 @@ def train():
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
     ddp_model = DDP(model, [local_rank])
-    loss_fn = nn.MSELoss()
-    optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
+    loss_fn = nn.BCELoss(reduction='mean')
+    # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
+    optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
         print(f"load checkpoint from {ckp_path}")
