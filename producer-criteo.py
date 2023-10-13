@@ -78,6 +78,7 @@ def process_data(data):
     print(f"drop {span}")
     i = 0
     p = False
+    rate_timer = time.time()
     for train_row, label_row in zip(train.iterrows(), train_label.iterrows()):
         train_data = train_row[1]
         label_data = label_row[1]
@@ -85,8 +86,8 @@ def process_data(data):
         message = json.dumps(message_dict).encode('utf-8')
         if i % 1000 == 0:
             p = True
-            g.set(1000 / (time.time() - start))
-            start = time.time()
+            g.set(1000 / (time.time() - rate_timer))
+            rate_timer = time.time()
         send_message(message, fast_rate, p)
         p = False
         i = i + 1
