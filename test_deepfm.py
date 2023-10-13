@@ -100,7 +100,7 @@ if __name__ == "__main__":
         total_loss_epoch = 0.0
         total_tmp = 0
 
-        model.train()
+        model.train().to(device)
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
