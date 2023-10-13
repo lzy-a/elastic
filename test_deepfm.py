@@ -105,7 +105,7 @@ if __name__ == "__main__":
             x = x.to(device).float()
             y = y.to(device).float()
 
-            y_hat = model(x)
+            y_hat = model(x).to(device)
 
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
@@ -118,5 +118,5 @@ if __name__ == "__main__":
             total_loss_epoch += loss.item()
             total_tmp += 1
         #
-        auc = get_auc(test_loader, model)
+        auc = get_auc(test_loader, model.to(device))
         print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches, total_loss_epoch / total_tmp, auc))
