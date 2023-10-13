@@ -85,7 +85,7 @@ def process_data(data):
         message = json.dumps(message_dict).encode('utf-8')
         if i % 1000 == 0:
             p = True
-            g.set(1000 / (time.time()) - start)
+            g.set(1000 / (time.time() - start))
             start = time.time()
         send_message(message, fast_rate, p)
         p = False
