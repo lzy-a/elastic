@@ -93,31 +93,7 @@ def process_data(data):
         i = i + 1
 
 
-def rate_cntrl():
-    global rate
-    while True:
-        if rate == fast_rate:
-            time.sleep(180)
-            rate = slow_rate
-        else:
-            time.sleep(120)
-            rate = fast_rate
-
-
-def rate_culc():
-    global cnt
-    while True:
-        cnt1 = cnt
-        time.sleep(10)
-        g.set((cnt - cnt1) / 10)
-        cnt = 0
-
-
 if __name__ == '__main__':
-    p = multiprocessing.Process(target=rate_cntrl)
-    p.start()
-    p1 = multiprocessing.Process(target=rate_culc)
-    p1.start()
     while True:
         start = time.time()
         reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1000)
