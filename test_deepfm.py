@@ -23,8 +23,8 @@ def get_auc(loader, model):
             x = x.to(device).float()
             y = y.to(device).float()
             y_hat = model(x).to(device)
-            pred += list(y_hat.numpy())
-            target += list(y.numpy())
+            pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
+            target += list(y.cpu().numpy())  # 将y移动到CPU上
     auc = roc_auc_score(target, pred)
     return auc
 
