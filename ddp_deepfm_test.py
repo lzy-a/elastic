@@ -66,7 +66,6 @@ if __name__ == "__main__":
     lr = 0.0005
     wd = 0.0001
     epoches = 100
-    device = "cuda: {}".format(local_rank)
     seed = 1024
     torch.manual_seed(seed)  # 为CPU设置随机种子
     torch.cuda.manual_seed(seed)  # 为当前GPU设置随机种子
@@ -105,8 +104,8 @@ if __name__ == "__main__":
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda: {}".format(local_rank)
     model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=device).to(local_rank)
