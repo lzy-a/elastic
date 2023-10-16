@@ -206,9 +206,6 @@ def train():
         first_epoch = checkpoint["epoch"]
         del checkpoint
 
-    # 创建数据加载器
-    # batch_size = int(global_batch_size / world_size)
-    # dataset = KafkaDataset()
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset()
