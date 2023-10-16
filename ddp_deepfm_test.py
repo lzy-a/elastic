@@ -58,7 +58,8 @@ def save_checkpoint(epoch, model, optimizer, path):
 if __name__ == "__main__":
     dist.init_process_group(backend="nccl")
     local_rank = int(os.environ["LOCAL_RANK"])
-    start_http_server(8000)
+    if local_rank==0:
+        start_http_server(8000)
     loss_g = Gauge('loss', 'loss')
     auc_g = Gauge('auc', 'auc')
     batch_size = 1024
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     train_tensor_data = torch.utils.data.TensorDataset(torch.from_numpy(np.array(train_data)),
                                                        torch.from_numpy(np.array(train_label)))
     sampler = DistributedSampler(train_tensor_data)
-    train_loader = DataLoader(dataset=train_tensor_data, shuffle=True, batch_size=batch_size)
+    train_loader = DataLoader(dataset=train_tensor_data, batch_size=batch_size,sampler=sampler)
 
     test_label = pd.DataFrame(test['label'])
     test_data = test.drop(columns=['label'])
