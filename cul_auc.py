@@ -84,7 +84,7 @@ if __name__ == "__main__":
     local_rank = int(os.environ["LOCAL_RANK"])
     model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=device)
+                   l2_reg_linear=1e-3, device=device).to(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
     # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
