@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import socket
 import multiprocessing
 from multiprocessing import Process, Value
@@ -105,11 +106,18 @@ class ToyModel(nn.Module):
 
 
 def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    tmp_path = path + ".tmp"
+
+    # 首先将模型保存到临时文件中
     torch.save({
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimize_state_dict": optimizer.state_dict(),
-    }, path)
+    }, tmp_path)
+
+    # 然后将临时文件移动到目标文件
+    shutil.move(tmp_path, path)
 
 
 def load_checkpoint(path):
@@ -195,11 +203,6 @@ def train():
             if i % 100 == 99:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
-                print(f"load checkpoint from {ckp_path}")
-                checkpoint = load_checkpoint(ckp_path)
-                ddp_model.load_state_dict(checkpoint["model_state_dict"])
-                optimizer.load_state_dict(checkpoint["optimize_state_dict"])
-                del checkpoint
                 save_g.set(time.time() - start)
             start = time.time()
             i += 1
