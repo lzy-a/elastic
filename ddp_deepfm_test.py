@@ -66,7 +66,7 @@ if __name__ == "__main__":
     lr = 0.0005
     wd = 0.0001
     epoches = 100
-
+    device = "cuda: {}".format(local_rank)
     seed = 1024
     torch.manual_seed(seed)  # 为CPU设置随机种子
     torch.cuda.manual_seed(seed)  # 为当前GPU设置随机种子
