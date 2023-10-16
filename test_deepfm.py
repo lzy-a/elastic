@@ -13,6 +13,8 @@ import numpy as np
 import random
 from deepfm import deepfm
 import time
+from prometheus_client import Gauge
+from prometheus_client import start_http_server
 
 
 def get_auc(loader, model):
@@ -26,11 +28,14 @@ def get_auc(loader, model):
             pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
             target += list(y.cpu().numpy())  # 将y移动到CPU上
     auc = roc_auc_score(target, pred)
+    auc_g.set(auc)
     return auc
 
 
 if __name__ == "__main__":
-
+    start_http_server(8000)
+    loss_g = Gauge('loss', 'loss')
+    auc_g = Gauge('auc', 'auc')
     batch_size = 1024
     lr = 0.0005
     wd = 0.0001
@@ -117,7 +122,9 @@ if __name__ == "__main__":
                 print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
                 start = time.time()
             total_loss_epoch += loss.item()
+            loss_g.set(loss.item())
             total_tmp += 1
         #
         auc = get_auc(test_loader, model.to(device))
+        auc_g.set(auc)
         print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches, total_loss_epoch / total_tmp, auc))
