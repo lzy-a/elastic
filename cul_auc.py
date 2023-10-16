@@ -16,6 +16,7 @@ import time
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 
+
 def get_auc(loader, model):
     pred, target = [], []
     model.eval()
@@ -72,6 +73,11 @@ if __name__ == "__main__":
     feat_sizes = {}
     feat_sizes.update(feat_size1)
     feat_sizes.update(feat_size2)
+    # feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
+    #               'I12': 1, 'I13': 1, 'C1': 541, 'C2': 497, 'C3': 43870, 'C4': 25184, 'C5': 145, 'C6': 12, 'C7': 7623,
+    #               'C8': 257, 'C9': 3, 'C10': 10997, 'C11': 3799, 'C12': 41312, 'C13': 2796, 'C14': 26, 'C15': 5238,
+    #               'C16': 34617, 'C17': 10, 'C18': 2548, 'C19': 1303, 'C20': 4, 'C21': 38618, 'C22': 11, 'C23': 14,
+    #               'C24': 12335, 'C25': 51, 'C26': 9527}
     feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
                   'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
                   'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
@@ -103,7 +109,6 @@ if __name__ == "__main__":
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
         first_epoch = checkpoint["epoch"]
         del checkpoint
-
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
