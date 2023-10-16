@@ -236,8 +236,8 @@ def kafka_setup():
 
 
 def run():
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
@@ -256,10 +256,10 @@ def run():
     dist.destroy_process_group()
 
 
-def signal_handler(sig, frame):
-    print('Signal received, saving checkpoint...')
-    save_checkpoint(i, ddp_model, optimizer, ckp_path)
-    sys.exit(0)
+# def signal_handler(sig, frame):
+#     print('Signal received, saving checkpoint...')
+#     save_checkpoint(i, ddp_model, optimizer, ckp_path)
+#     sys.exit(0)
 
 
 if __name__ == "__main__":
