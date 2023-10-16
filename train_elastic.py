@@ -155,8 +155,9 @@ def save_checkpoint(epoch, model, optimizer, path):
         "optimize_state_dict": optimizer.state_dict(),
     }, tmp_path)
 
-    # 然后将临时文件移动到目标文件
-    shutil.move(tmp_path, path)
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
 
 
 def load_checkpoint(path):
