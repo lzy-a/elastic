@@ -149,6 +149,7 @@ def train():
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
         first_epoch = checkpoint["epoch"]
+        del checkpoint
 
     # 创建数据加载器
     # batch_size = int(global_batch_size / world_size)
@@ -191,13 +192,14 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            if i % 100 == 0:
+            if i % 100 == 99:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 print(f"load checkpoint from {ckp_path}")
                 checkpoint = load_checkpoint(ckp_path)
                 ddp_model.load_state_dict(checkpoint["model_state_dict"])
                 optimizer.load_state_dict(checkpoint["optimize_state_dict"])
+                del checkpoint
                 save_g.set(time.time() - start)
             start = time.time()
             i += 1
