@@ -126,7 +126,7 @@ if __name__ == "__main__":
                                                       torch.from_numpy(np.array(test_label)))
     test_loader = DataLoader(dataset=test_tensor_data, shuffle=False, batch_size=batch_size)
 
-    loss_func = nn.BCELoss(reduction='mean').to(device)
+    loss_func = nn.BCELoss(reduction='mean')
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
 
     start = time.time()
