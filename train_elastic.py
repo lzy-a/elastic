@@ -134,7 +134,7 @@ def train():
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
+                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}")
     global ddp_model
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
@@ -194,6 +194,10 @@ def train():
             if i % 100 == 0:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
+                print(f"load checkpoint from {ckp_path}")
+                checkpoint = load_checkpoint(ckp_path)
+                ddp_model.load_state_dict(checkpoint["model_state_dict"])
+                optimizer.load_state_dict(checkpoint["optimize_state_dict"])
                 save_g.set(time.time() - start)
             start = time.time()
             i += 1
@@ -245,6 +249,7 @@ def run():
     # kafka_warmup()
     train()
     dist.destroy_process_group()
+
 
 def signal_handler(sig, frame):
     print('Signal received, saving checkpoint...')
