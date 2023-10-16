@@ -118,7 +118,7 @@ if __name__ == "__main__":
     train_tensor_data = torch.utils.data.TensorDataset(torch.from_numpy(np.array(train_data)),
                                                        torch.from_numpy(np.array(train_label)))
     sampler = DistributedSampler(train_tensor_data)
-    train_loader = DataLoader(dataset=train_tensor_data, shuffle=True, batch_size=batch_size, sampler=sampler)
+    train_loader = DataLoader(dataset=train_tensor_data, shuffle=True, batch_size=batch_size)
 
     test_label = pd.DataFrame(test['label'])
     test_data = test.drop(columns=['label'])
