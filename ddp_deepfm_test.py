@@ -1,3 +1,5 @@
+import shutil
+
 import pandas as pd
 import torch
 from sklearn.metrics import log_loss, roc_auc_score
@@ -19,6 +21,7 @@ import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 
+
 def get_auc(loader, model):
     pred, target = [], []
     model.eval()
@@ -32,6 +35,24 @@ def get_auc(loader, model):
     auc = roc_auc_score(target, pred)
     auc_g.set(auc)
     return auc
+
+
+def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
+    tmp_path = path + ".tmp"
+
+    # 首先将模型保存到临时文件中
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimize_state_dict": optimizer.state_dict(),
+    }, tmp_path)
+
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
 
 
 if __name__ == "__main__":
@@ -55,7 +76,7 @@ if __name__ == "__main__":
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
-    df = pd.read_csv('data/dac_sample.txt', names=col_names, sep='\t')
+    df = pd.read_csv('data/small.txt', names=col_names, sep='\t')
     # df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
     feature_names = dense_features + sparse_features
 
@@ -89,7 +110,7 @@ if __name__ == "__main__":
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=device).to(local_rank)
 
-    ddp_model = DDP(model, [local_rank])
+    model = DDP(model, [local_rank])
 
     train_label = pd.DataFrame(train['label'])
     train_data = train.drop(columns=['label'])
@@ -106,14 +127,14 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_tensor_data, shuffle=False, batch_size=batch_size)
 
     loss_func = nn.BCELoss(reduction='mean').to(device)
-    optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
 
     start = time.time()
     for epoch in range(epoches):
         total_loss_epoch = 0.0
         total_tmp = 0
 
-        ddp_model.train().to(device)
+        model.train().to(device)
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
@@ -132,6 +153,7 @@ if __name__ == "__main__":
             loss_g.set(loss.item())
             total_tmp += 1
         #
+        save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         auc = get_auc(test_loader, model.to(device))
         auc_g.set(auc)
         print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,

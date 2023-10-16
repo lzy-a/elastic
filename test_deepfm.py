@@ -1,3 +1,5 @@
+import shutil
+
 import pandas as pd
 import torch
 from sklearn.metrics import log_loss, roc_auc_score
@@ -30,6 +32,24 @@ def get_auc(loader, model):
     auc = roc_auc_score(target, pred)
     auc_g.set(auc)
     return auc
+
+
+def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
+    tmp_path = path + ".tmp"
+
+    # 首先将模型保存到临时文件中
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimize_state_dict": optimizer.state_dict(),
+    }, tmp_path)
+
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
 
 
 if __name__ == "__main__":
@@ -125,6 +145,8 @@ if __name__ == "__main__":
             loss_g.set(loss.item())
             total_tmp += 1
         #
+        save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         auc = get_auc(test_loader, model.to(device))
         auc_g.set(auc)
-        print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches, total_loss_epoch / total_tmp, auc))
+        print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
+                                                                                  total_loss_epoch / total_tmp, auc))
