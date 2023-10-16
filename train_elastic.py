@@ -146,6 +146,8 @@ class ToyModel(nn.Module):
 
 def save_checkpoint(epoch, model, optimizer, path):
     # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
     tmp_path = path + ".tmp"
 
     # 首先将模型保存到临时文件中
