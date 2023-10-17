@@ -177,9 +177,9 @@ def get_auc(loader, model):
     local_rank = int(os.environ["LOCAL_RANK"])
     device = "cuda:{}".format(local_rank)
     with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device).float()
-            y = y.to(device).float()
+        for sample in loader:
+            x = sample["input_data"]
+            y = sample["labels"]
             y_hat = model(x).to(device)
             pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
             target += list(y.cpu().numpy())  # 将y移动到CPU上
@@ -276,7 +276,7 @@ def train():
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             start = time.time()
-            if time.time()-auc_timer > 300:
+            if time.time()-auc_timer > 120:
                 auc = get_auc(dataloader, ddp_model)
                 auc_g.set(auc)
                 auc_timer = time.time()
