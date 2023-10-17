@@ -187,7 +187,6 @@ def get_auc(loader, model):
     return auc
 
 
-
 def train():
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
@@ -234,7 +233,7 @@ def train():
     i = 0
     step = 0
     step_timer = time.time()
-    auc_timer = time.time()
+    auc_timer = time.time() - 70
     model.train().to(local_rank)
     while True:
         start = time.time()
@@ -269,7 +268,7 @@ def train():
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             start = time.time()
-            if time.time()-auc_timer > 120:
+            if time.time() - auc_timer > 90:
                 auc = get_auc(dataloader, ddp_model)
                 auc_g.set(auc)
                 auc_timer = time.time()
