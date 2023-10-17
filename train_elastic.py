@@ -156,7 +156,6 @@ def save_checkpoint(epoch, model, optimizer, path):
 
     # 首先将模型保存到临时文件中
     torch.save({
-        "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimize_state_dict": optimizer.state_dict(),
     }, tmp_path)
@@ -221,18 +220,9 @@ def train():
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
-
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]load checkpoint from {ckp_path}")
-        checkpoint = load_checkpoint(ckp_path)
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]load model para")
+        checkpoint = torch.load("checkpoint.pth", map_location="cpu")
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]load optim para")
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
-        first_epoch = checkpoint["epoch"]
         del checkpoint
 
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
