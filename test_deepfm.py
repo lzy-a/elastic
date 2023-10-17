@@ -57,8 +57,8 @@ if __name__ == "__main__":
     loss_g = Gauge('loss', 'loss')
     auc_g = Gauge('auc', 'auc')
     batch_size = 1024
-    lr = 0.0005
-    wd = 0.0001
+    lr = 0.00005
+    wd = 0.001
     epoches = 100
 
     seed = 1024

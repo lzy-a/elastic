@@ -2,6 +2,8 @@ import argparse
 import os
 import shutil
 import socket
+
+import pandas as pd
 import multiprocessing
 from multiprocessing import Process, Value
 import sys
@@ -16,6 +18,7 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from sklearn.metrics import log_loss, roc_auc_score
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
@@ -26,6 +29,7 @@ import signal
 
 from deepfm import deepfm
 
+auc_g = Gauge('auc', 'auc')
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
@@ -104,7 +108,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             })
 
     def __len__(self):
-        return 10 ** 8
+        return 10 ** 5
 
     def __getitem__(self, idx):
         if len(self.buffer) == 0:
@@ -167,7 +171,29 @@ def load_checkpoint(path):
     return checkpoint
 
 
+def get_auc(loader, model):
+    pred, target = [], []
+    model.eval()
+    local_rank = int(os.environ["LOCAL_RANK"])
+    device = "cuda:{}".format(local_rank)
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(device).float()
+            y = y.to(device).float()
+            y_hat = model(x).to(device)
+            pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
+            target += list(y.cpu().numpy())  # 将y移动到CPU上
+    auc = roc_auc_score(target, pred)
+    auc_g.set(auc)
+    return auc
+
+
+
 def train():
+    sparse_features = ['C' + str(i) for i in range(1, 27)]
+    dense_features = ['I' + str(i) for i in range(1, 14)]
+    col_names = ['label'] + dense_features + sparse_features
+    df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
     lr = 0.0005
     wd = 0.0001
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -215,6 +241,7 @@ def train():
     i = 0
     step = 0
     step_timer = time.time()
+    auc_timer = time.time()
     model.train().to(local_rank)
     while True:
         start = time.time()
@@ -249,6 +276,10 @@ def train():
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             start = time.time()
+            if time.time()-auc_timer > 300:
+                auc = get_auc(dataloader, ddp_model)
+                auc_g.set(auc)
+                auc_timer = time.time()
             i += 1
 
 
