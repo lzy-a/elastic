@@ -221,18 +221,17 @@ def train():
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
-        print(f"load checkpoint from {ckp_path}")
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+
+        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]load checkpoint from {ckp_path}")
         checkpoint = load_checkpoint(ckp_path)
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]load model para")
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]load optim para")
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
-        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
-        print(f"[{os.getpid()}]Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
+        print(f"[{os.getpid()}]Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB Reserved memory: {torch.cuda.memory_reserved() / 1024 ** 2} MB")
         first_epoch = checkpoint["epoch"]
         del checkpoint
 
