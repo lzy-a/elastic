@@ -220,7 +220,7 @@ def train():
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
-        checkpoint = torch.load("checkpoint.pth", map_location="cpu")
+        checkpoint = torch.load(ckp_path, map_location="cpu")
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
         del checkpoint
