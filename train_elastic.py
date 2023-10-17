@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import socket
 import multiprocessing
 from multiprocessing import Process, Value
@@ -72,6 +73,45 @@ class DCAPDataset(torch.utils.data.Dataset):
         }
 
 
+class DeepfmDataset(torch.utils.data.Dataset):
+    def __init__(self, buffer_size=5000):
+        self.buffer_size = buffer_size
+        self.buffer = []
+        self.local_rank = int(os.environ["LOCAL_RANK"])
+        self.consumer = consumer
+        self.refill_buffer()
+
+    def refill_buffer(self):
+        start = time.time()
+        while len(self.buffer) < self.buffer_size:
+            message = next(self.consumer)
+            message_dict = json.loads(message.value.decode('utf-8'))
+
+            # 现在你可以通过键来访问train和label数据
+            train_data = message_dict['train']
+            label_data = message_dict['label']
+
+            train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+            label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+
+            timestamp = message.timestamp
+            get_item_g.set(time.time() - start)
+
+            self.buffer.append({
+                'input_data': train_tensor,
+                'labels': label_tensor,
+                'timestamp': timestamp
+            })
+
+    def __len__(self):
+        return 10 ** 8
+
+    def __getitem__(self, idx):
+        if len(self.buffer) == 0:
+            self.refill_buffer()
+        return self.buffer.pop(0)
+
+
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
@@ -105,11 +145,21 @@ class ToyModel(nn.Module):
 
 
 def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
+    tmp_path = path + ".tmp"
+
+    # 首先将模型保存到临时文件中
     torch.save({
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimize_state_dict": optimizer.state_dict(),
-    }, path)
+    }, tmp_path)
+
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
 
 
 def load_checkpoint(path):
@@ -126,15 +176,20 @@ def train():
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
     # model = ToyModel().cuda(local_rank)
     feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
-                  'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
-                  'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
-                  'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547,
-                  'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
+                  'I12': 1, 'I13': 1, 'C1': 541, 'C2': 497, 'C3': 43870, 'C4': 25184, 'C5': 145, 'C6': 12, 'C7': 7623,
+                  'C8': 257, 'C9': 3, 'C10': 10997, 'C11': 3799, 'C12': 41312, 'C13': 2796, 'C14': 26, 'C15': 5238,
+                  'C16': 34617, 'C17': 10, 'C18': 2548, 'C19': 1303, 'C20': 4, 'C21': 38618, 'C22': 11, 'C23': 14,
+                  'C24': 12335, 'C25': 51, 'C26': 9527}
+    # feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
+    #               'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
+    #               'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
+    #               'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547,
+    #               'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
+                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").to(local_rank)
     global ddp_model
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
@@ -149,13 +204,11 @@ def train():
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
         first_epoch = checkpoint["epoch"]
+        del checkpoint
 
-    # 创建数据加载器
-    # batch_size = int(global_batch_size / world_size)
-    # dataset = KafkaDataset()
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DCAPDataset()
+    dataset = DeepfmDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     global i
@@ -191,7 +244,7 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            if i % 100 == 0:
+            if i % 100 == 99:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
@@ -227,8 +280,8 @@ def kafka_setup():
 
 
 def run():
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
@@ -246,10 +299,11 @@ def run():
     train()
     dist.destroy_process_group()
 
-def signal_handler(sig, frame):
-    print('Signal received, saving checkpoint...')
-    save_checkpoint(i, ddp_model, optimizer, ckp_path)
-    sys.exit(0)
+
+# def signal_handler(sig, frame):
+#     print('Signal received, saving checkpoint...')
+#     save_checkpoint(i, ddp_model, optimizer, ckp_path)
+#     sys.exit(0)
 
 
 if __name__ == "__main__":
