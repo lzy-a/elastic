@@ -193,8 +193,8 @@ def train():
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
     # df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
-    lr = 0.0005
-    wd = 0.0001
+    lr = 0.001
+    wd = 0.00001
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
