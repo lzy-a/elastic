@@ -1,6 +1,9 @@
 import argparse
 import os
+import shutil
 import socket
+
+import pandas as pd
 import multiprocessing
 from multiprocessing import Process, Value
 import sys
@@ -15,6 +18,7 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from sklearn.metrics import log_loss, roc_auc_score
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
@@ -25,6 +29,7 @@ import signal
 
 from deepfm import deepfm
 
+auc_g = Gauge('auc', 'auc')
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
 loss_g = Gauge('loss', 'loss')
@@ -72,6 +77,45 @@ class DCAPDataset(torch.utils.data.Dataset):
         }
 
 
+class DeepfmDataset(torch.utils.data.Dataset):
+    def __init__(self, buffer_size=5000):
+        self.buffer_size = buffer_size
+        self.buffer = []
+        self.local_rank = int(os.environ["LOCAL_RANK"])
+        self.consumer = consumer
+        self.refill_buffer()
+
+    def refill_buffer(self):
+        start = time.time()
+        while len(self.buffer) < self.buffer_size:
+            message = next(self.consumer)
+            message_dict = json.loads(message.value.decode('utf-8'))
+
+            # 现在你可以通过键来访问train和label数据
+            train_data = message_dict['train']
+            label_data = message_dict['label']
+
+            train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+            label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+
+            timestamp = message.timestamp
+            get_item_g.set(time.time() - start)
+
+            self.buffer.append({
+                'input_data': train_tensor,
+                'labels': label_tensor,
+                'timestamp': timestamp
+            })
+
+    def __len__(self):
+        return 10 ** 5
+
+    def __getitem__(self, idx):
+        if len(self.buffer) == 0:
+            self.refill_buffer()
+        return self.buffer.pop(0)
+
+
 # 定义自定义数据加载器
 class KafkaDataset(torch.utils.data.Dataset):
     def __len__(self):
@@ -105,11 +149,20 @@ class ToyModel(nn.Module):
 
 
 def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
+    tmp_path = path + ".tmp"
+
+    # 首先将模型保存到临时文件中
     torch.save({
-        "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimize_state_dict": optimizer.state_dict(),
-    }, path)
+    }, tmp_path)
+
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
 
 
 def load_checkpoint(path):
@@ -117,14 +170,40 @@ def load_checkpoint(path):
     return checkpoint
 
 
+def get_auc(loader, model):
+    pred, target = [], []
+    model.eval()
+    local_rank = int(os.environ["LOCAL_RANK"])
+    device = "cuda:{}".format(local_rank)
+    with torch.no_grad():
+        for sample in loader:
+            x = sample["input_data"]
+            y = sample["labels"]
+            y_hat = model(x).to(device)
+            pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
+            target += list(y.cpu().numpy())  # 将y移动到CPU上
+    auc = roc_auc_score(target, pred)
+    auc_g.set(auc)
+    return auc
+
+
 def train():
-    lr = 0.00005
+    sparse_features = ['C' + str(i) for i in range(1, 27)]
+    dense_features = ['I' + str(i) for i in range(1, 14)]
+    col_names = ['label'] + dense_features + sparse_features
+    # df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
+    lr = 0.001
     wd = 0.00001
     local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     print(f"[{os.getpid()}] (rank = {rank}, local_rank = {local_rank}) train worker starting...")
     # model = ToyModel().cuda(local_rank)
+    # feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
+    #               'I12': 1, 'I13': 1, 'C1': 541, 'C2': 497, 'C3': 43870, 'C4': 25184, 'C5': 145, 'C6': 12, 'C7': 7623,
+    #               'C8': 257, 'C9': 3, 'C10': 10997, 'C11': 3799, 'C12': 41312, 'C13': 2796, 'C14': 26, 'C15': 5238,
+    #               'C16': 34617, 'C17': 10, 'C18': 2548, 'C19': 1303, 'C20': 4, 'C21': 38618, 'C22': 11, 'C23': 14,
+    #               'C24': 12335, 'C25': 51, 'C26': 9527}
     feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
                   'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
                   'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
@@ -134,34 +213,27 @@ def train():
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").cuda(local_rank)
-    global ddp_model
+                   l2_reg_linear=1e-3, device=f"cuda:{local_rank}").to(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
-    # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
-    global optimizer
-    global ckp_path
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
-        print(f"load checkpoint from {ckp_path}")
-        checkpoint = load_checkpoint(ckp_path)
+        checkpoint = torch.load(ckp_path, map_location="cpu")
         ddp_model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimize_state_dict"])
-        first_epoch = checkpoint["epoch"]
+        del checkpoint
 
-    # 创建数据加载器
-    # batch_size = int(global_batch_size / world_size)
-    # dataset = KafkaDataset()
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DCAPDataset()
+    dataset = DeepfmDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     global i
     i = 0
     step = 0
     step_timer = time.time()
+    auc_timer = time.time() - 70
     model.train().to(local_rank)
     while True:
         start = time.time()
@@ -191,11 +263,15 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
-            if i % 100 == 0:
+            if i % 500 == 99:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             start = time.time()
+            if time.time() - auc_timer > 90:
+                auc = get_auc(dataloader, ddp_model)
+                auc_g.set(auc)
+                auc_timer = time.time()
             i += 1
 
 
@@ -227,8 +303,8 @@ def kafka_setup():
 
 
 def run():
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
     kafka_setup()
@@ -246,10 +322,11 @@ def run():
     train()
     dist.destroy_process_group()
 
-def signal_handler(sig, frame):
-    print('Signal received, saving checkpoint...')
-    save_checkpoint(i, ddp_model, optimizer, ckp_path)
-    sys.exit(0)
+
+# def signal_handler(sig, frame):
+#     print('Signal received, saving checkpoint...')
+#     save_checkpoint(i, ddp_model, optimizer, ckp_path)
+#     sys.exit(0)
 
 
 if __name__ == "__main__":

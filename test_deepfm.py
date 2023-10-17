@@ -1,3 +1,5 @@
+import shutil
+
 import pandas as pd
 import torch
 from sklearn.metrics import log_loss, roc_auc_score
@@ -13,6 +15,8 @@ import numpy as np
 import random
 from deepfm import deepfm
 import time
+from prometheus_client import Gauge
+from prometheus_client import start_http_server
 
 
 def get_auc(loader, model):
@@ -26,14 +30,35 @@ def get_auc(loader, model):
             pred += list(y_hat.cpu().numpy())  # 将y_hat移动到CPU上
             target += list(y.cpu().numpy())  # 将y移动到CPU上
     auc = roc_auc_score(target, pred)
+    auc_g.set(auc)
     return auc
 
 
-if __name__ == "__main__":
+def save_checkpoint(epoch, model, optimizer, path):
+    # 创建一个临时文件路径
+    if int(os.environ["LOCAL_RANK"]) != 0:
+        return
+    tmp_path = path + ".tmp"
 
+    # 首先将模型保存到临时文件中
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimize_state_dict": optimizer.state_dict(),
+    }, tmp_path)
+
+    if os.path.exists(tmp_path):
+        # 然后将临时文件移动到目标文件
+        shutil.move(tmp_path, path)
+
+
+if __name__ == "__main__":
+    start_http_server(8000)
+    loss_g = Gauge('loss', 'loss')
+    auc_g = Gauge('auc', 'auc')
     batch_size = 1024
     lr = 0.00005
-    wd = 0.00001
+    wd = 0.001
     epoches = 100
 
     seed = 1024
@@ -117,7 +142,11 @@ if __name__ == "__main__":
                 print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
                 start = time.time()
             total_loss_epoch += loss.item()
+            loss_g.set(loss.item())
             total_tmp += 1
         #
+        save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         auc = get_auc(test_loader, model.to(device))
-        print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches, total_loss_epoch / total_tmp, auc))
+        auc_g.set(auc)
+        print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
+                                                                                  total_loss_epoch / total_tmp, auc))
