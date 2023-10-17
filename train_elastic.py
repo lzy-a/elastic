@@ -193,7 +193,7 @@ def train():
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
-    df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
+    # df = pd.read_csv('data/test.txt', names=col_names, sep='\t')
     lr = 0.0005
     wd = 0.0001
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -216,12 +216,8 @@ def train():
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
                    dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
                    l2_reg_linear=1e-3, device=f"cuda:{local_rank}").to(local_rank)
-    global ddp_model
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
-    # optimiz er = optim.SGD(ddp_model.parameters(), lr=0.001)
-    global optimizer
-    global ckp_path
     optimizer = optim.Adam(ddp_model.parameters(), lr=lr, weight_decay=wd)
     ckp_path = "checkpoint.pt"
     if os.path.exists(ckp_path):
