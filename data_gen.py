@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 
 # 设置时间范围和间隔
 start_time = 0  # 开始时间（小时）
@@ -20,10 +20,6 @@ peak_data[(time < 1) | (time > 7)] = 0
 # 将波谷和波峰数据进行合并
 data = valley_data + peak_data
 
-# 绘制数据随时间的变化情况
-plt.plot(time, data)
-plt.xlabel('Time (h)')
-plt.ylabel('Data')
-plt.title('Traffic Pattern Over Time')
-plt.grid(True)
-plt.show()
+# 将数据保存到CSV文件
+data_df = pd.DataFrame(data, columns=['Data'])
+data_df.to_csv('history_data.csv', index=False)
