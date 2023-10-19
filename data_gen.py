@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
 
-from lstm import LSTMModel
 
 # 定义全天的24小时
 hours = np.arange(24)
