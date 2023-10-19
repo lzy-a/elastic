@@ -1,25 +1,26 @@
 import numpy as np
 import pandas as pd
 
-# 设置时间范围和间隔
-start_time = 0  # 开始时间（小时）
-end_time = 24  # 结束时间（小时）
-time_interval = 1  # 时间间隔（小时）
+# 定义时间段和对应的流量
+time_periods = ['1-7', 'other']
+traffic_data = [1000, 6000]
 
-# 生成时间序列
-time = np.arange(start_time, end_time, time_interval)
+# 定义全天的24小时
+hours = np.arange(24)
 
-# 生成凌晨1点-早上7点的波谷数据
-valley_data = np.zeros_like(time)
-valley_data[(time >= 1) & (time <= 7)] = 1
+# 生成基础流量数据
+base_traffic = np.zeros_like(hours)
+for i, period in enumerate(time_periods):
+    if period == '1-7':
+        base_traffic[hours < 7] = traffic_data[i]
+    else:
+        base_traffic[hours >= 7] = traffic_data[i]
 
-# 生成其他时间的波峰数据
-peak_data = np.ones_like(time)
-peak_data[(time < 1) | (time > 7)] = 0
+    # 生成带有10%波动性的新数据
+std_dev = 0.1 * base_traffic  # 计算标准差
+traffic_data_new = base_traffic + np.random.normal(0, std_dev)  # 生成新数据
 
-# 将波谷和波峰数据进行合并
-data = valley_data + peak_data
-
-# 将数据保存到CSV文件
-data_df = pd.DataFrame(data, columns=['Data'])
-data_df.to_csv('history_data.csv', index=False)
+# 将新数据转换为DataFrame并打印
+df = pd.DataFrame({'Hour': hours, 'Traffic': traffic_data_new})
+print(df)
+df.to_csv('history_data.csv', index=False)
