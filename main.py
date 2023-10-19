@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from lstm import LSTMModel
 
-
-traffic_data = pd.read_csv('history_data.csv')
+date_range = pd.date_range(start='1/1/2023', end='12/31/2023')
+traffic_data = pd.read_csv('history_data.csv', index=date_range, columns=range(24))
 data = torch.tensor(traffic_data)
 # 将数据划分为输入和目标变量
 input_data = data[:, :-1].float()
