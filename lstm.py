@@ -34,11 +34,11 @@ class LSTMModel(nn.Module):
             # Last layer (n_hidden x n_outputs)
             if i == n_deep_layers - 1:
                 dnn_layers.append(nn.ReLU())
-                dnn_layers.append(nn.Linear(nhid, n_outputs))
+                dnn_layers.append(nn.Linear(self.nhid, n_outputs))
             # All other layers (n_hidden x n_hidden) with dropout option
             else:
                 dnn_layers.append(nn.ReLU())
-                dnn_layers.append(nn.Linear(nhid, nhid))
+                dnn_layers.append(nn.Linear(self.nhid, self.nhid))
                 if dropout:
                     dnn_layers.append(nn.Dropout(p=dropout))
         # compile DNN layers
