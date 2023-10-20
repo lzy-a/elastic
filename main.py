@@ -47,9 +47,8 @@ if __name__ == '__main__':
     split = 0.8
     BATCH_SIZE = 32
     traffic_data = pd.read_csv('history_data.csv')
-    print(traffic_data)
     data = generate_sequences(traffic_data, tw=24, pw=24, target_columns="0")
-
+    print(data)
     dataset = SequenceDataset(data)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     train_len = int(len(dataset) * split)
