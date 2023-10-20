@@ -129,8 +129,6 @@ if __name__ == '__main__':
                 labels.append(y)
 
         #plot the results
-        preds = torch.cat(preds).cpu().numpy()
-        labels = torch.cat(labels).cpu().numpy()
         plt.plot(preds, label='predictions')
         plt.plot(labels, label='actual')
         plt.legend()
