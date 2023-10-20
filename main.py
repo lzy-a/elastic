@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     input_size = 2880
     hidden_size = 100  # LSTM隐藏层的大小
     output_size = 1  # 输出特征的维度（这里假设为1）
-    n_epochs = 100  # 训练的轮数
+    n_epochs = 10  # 训练的轮数
     learning_rate = 0.001  # 学习率
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
 
@@ -67,6 +69,8 @@ if __name__ == '__main__':
 
     model = LSTMModel(1, n_hidden=hidden_size, n_outputs=output_size, sequence_len=input_size, n_lstm_layers=5,
                       device=device).to(device)
+    if os.path.exists('lstm.pt'):
+        model.load_state_dict(torch.load('lstm.pt'), map_location="cpu")
     criterion = nn.MSELoss()  # 均方误差损失函数
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
 
@@ -104,18 +108,11 @@ if __name__ == '__main__':
             with torch.no_grad():
                 x, y = x.to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
-                accuracy_scores += accuracy_score(y.cpu(), preds.cpu())
-                precision_scores += precision_score(y.cpu(), preds.cpu(), average='weighted')
-                recall_scores += recall_score(y.cpu(), preds.cpu(), average='weighted')
-                f1_scores += f1_score(y.cpu(), preds.cpu(), average='weighted')
                 error = criterion(preds, y)
             valid_loss += error.item()
 
         valid_loss = valid_loss / len(testloader)
-        precision_scores = precision_scores / len(testloader)
-        recall_scores = recall_scores / len(testloader)
-        f1_scores = f1_scores / len(testloader)
-        accuracy_scores = accuracy_scores / len(testloader)
         v_losses.append(valid_loss)
 
-        print(f'{epoch} - train: {epoch_loss}, valid: {valid_loss}, precision: {precision_scores}, recall: {recall_scores}, f1: {f1_scores}, accuracy: {accuracy_scores}')
+        print(
+            f'{epoch} - train: {epoch_loss}, valid: {valid_loss}, precision: {precision_scores}, recall: {recall_scores}, f1: {f1_scores}, accuracy: {accuracy_scores}')
