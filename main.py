@@ -5,6 +5,7 @@ import pandas as pd
 from lstm import LSTMModel
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import random_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 
 def generate_sequences(df: pd.DataFrame, tw: int, pw: int, target_columns, drop_targets=False):
@@ -55,7 +56,7 @@ if __name__ == '__main__':
 
     traffic_data = pd.read_csv('history_data.csv')
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
-    # print(data)
+    print("data gerneated")
     dataset = SequenceDataset(data)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     train_len = int(len(dataset) * split)
@@ -72,6 +73,7 @@ if __name__ == '__main__':
     # 训练模型
     # Lists to store training and validation losses
     t_losses, v_losses = [], []
+    accuracy_scores, precision_scores, recall_scores, f1_scores = 0, 0, 0, 0
     # Loop over epochs
     for epoch in range(n_epochs):
         train_loss, valid_loss = 0.0, 0.0
@@ -87,7 +89,7 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            # print(f'loss: {loss.item()}')
+            print(f'loss: {loss.item()}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -102,9 +104,18 @@ if __name__ == '__main__':
             with torch.no_grad():
                 x, y = x.to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
+                accuracy_scores += accuracy_score(y, preds)
+                precision_scores += precision_score(y, preds)
+                recall_scores += recall_score(y, preds)
+                f1_scores += f1_score(y, preds)
                 error = criterion(preds, y)
             valid_loss += error.item()
+
         valid_loss = valid_loss / len(testloader)
+        precision_scores = precision_scores / len(testloader)
+        recall_scores = recall_scores / len(testloader)
+        f1_scores = f1_scores / len(testloader)
+        accuracy_scores = accuracy_scores / len(testloader)
         v_losses.append(valid_loss)
 
-        print(f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
+        print(f'{epoch} - train: {epoch_loss}, valid: {valid_loss}, precision: {precision_scores}, recall: {recall_scores}, f1: {f1_scores}, accuracy: {accuracy_scores}')
