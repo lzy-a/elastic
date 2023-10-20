@@ -84,7 +84,7 @@ if __name__ == '__main__':
             print(y.shape)
             optimizer.zero_grad()
             # move inputs to device
-            x = x.to(device)
+            x = x.squeeze().to(device)
             y = y.squeeze().to(device)
             # Forward Pass
             preds = model(x).squeeze()
