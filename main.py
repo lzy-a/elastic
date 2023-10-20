@@ -42,8 +42,8 @@ class SequenceDataset(Dataset):
         return len(self.data)
 
 
-date_range = pd.date_range(start='1/1/2023', end='12/31/2023')
 traffic_data = pd.read_csv('history_data.csv')
+print(traffic_data)
 data = generate_sequences(traffic_data, tw=24, pw=24, target_columns=[1])
 
 dataset = SequenceDataset(data)
