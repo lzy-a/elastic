@@ -44,7 +44,7 @@ class SequenceDataset(Dataset):
 
 traffic_data = pd.read_csv('history_data.csv')
 print(traffic_data)
-data = generate_sequences(traffic_data, tw=24, pw=24, target_columns=[1])
+data = generate_sequences(traffic_data, tw=24, pw=24, target_columns="0")
 
 dataset = SequenceDataset(data)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
