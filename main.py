@@ -45,7 +45,7 @@ class SequenceDataset(Dataset):
 
 if __name__ == '__main__':
     split = 0.8
-    BATCH_SIZE = 32
+    BATCH_SIZE = 1024
     input_size = 180
     hidden_size = 100  # LSTM隐藏层的大小
     output_size = 1  # 输出特征的维度（这里假设为1）
@@ -85,8 +85,6 @@ if __name__ == '__main__':
             # move inputs to device
             x = x.permute(0, 2, 1).to(device)
             y = y.squeeze().to(device)
-            print(x.shape)
-            print(y.shape)
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
