@@ -79,6 +79,8 @@ if __name__ == '__main__':
         model.train()
         # Loop over train dataset
         for x, y in trainloader:
+            print(x.shape)
+            print(y.shape)
             optimizer.zero_grad()
             # move inputs to device
             x = x.to(device)
