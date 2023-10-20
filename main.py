@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from lstm import LSTMModel
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import random_split
 
 
 def generate_sequences(df: pd.DataFrame, tw: int, pw: int, target_columns, drop_targets=False):
@@ -42,33 +43,65 @@ class SequenceDataset(Dataset):
         return len(self.data)
 
 
-traffic_data = pd.read_csv('history_data.csv')
-print(traffic_data)
-data = generate_sequences(traffic_data, tw=24, pw=24, target_columns="0")
+if __name__ == '__main__':
+    split = 0.8
+    BATCH_SIZE = 32
+    traffic_data = pd.read_csv('history_data.csv')
+    print(traffic_data)
+    data = generate_sequences(traffic_data, tw=24, pw=24, target_columns="0")
 
-dataset = SequenceDataset(data)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataset = SequenceDataset(data)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    train_len = int(len(dataset) * split)
+    lens = [train_len, len(dataset) - train_len]
+    train_ds, test_ds = random_split(dataset, lens)
+    trainloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
+    testloader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 
-input_size = data.shape[1]
-hidden_size = 100  # LSTM隐藏层的大小
-output_size = 1  # 输出特征的维度（这里假设为1）
-num_epochs = 100  # 训练的轮数
-learning_rate = 0.001  # 学习率
+    input_size = 180
+    hidden_size = 100  # LSTM隐藏层的大小
+    output_size = 1  # 输出特征的维度（这里假设为1）
+    n_epochs = 100  # 训练的轮数
+    learning_rate = 0.001  # 学习率
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
+    model = LSTMModel(input_size, hidden_size, output_size).to(device)
+    criterion = nn.MSELoss()  # 均方误差损失函数
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
 
-model = LSTMModel(input_size, hidden_size, output_size)
-criterion = nn.MSELoss()  # 均方误差损失函数
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
+    # 训练模型
+    # Lists to store training and validation losses
+    t_losses, v_losses = [], []
+    # Loop over epochs
+    for epoch in range(n_epochs):
+        train_loss, valid_loss = 0.0, 0.0
 
-# 训练模型
-for epoch in range(num_epochs):
-    for batch in dataloader:
-        print(batch)
-        # 前向传播
-        outputs = model(batch)
-        loss = criterion(outputs, torch.tensor([1] * len(batch)))
+        # train step
+        model.train()
+        # Loop over train dataset
+        for x, y in trainloader:
+            optimizer.zero_grad()
+            # move inputs to device
+            x = x.to(device)
+            y = y.squeeze().to(device)
+            # Forward Pass
+            preds = model(x).squeeze()
+            loss = criterion(preds, y)  # compute batch loss
+            train_loss += loss.item()
+            loss.backward()
+            optimizer.step()
+        epoch_loss = train_loss / len(trainloader)
+        t_losses.append(epoch_loss)
 
-        # 反向传播和优化
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+        # validation step
+        model.eval()
+        # Loop over validation dataset
+        for x, y in testloader:
+            with torch.no_grad():
+                x, y = x.to(device), y.squeeze().to(device)
+                preds = model(x).squeeze()
+                error = criterion(preds, y)
+            valid_loss += error.item()
+        valid_loss = valid_loss / len(testloader)
+        v_losses.append(valid_loss)
+
+        print(f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
