@@ -46,9 +46,16 @@ class SequenceDataset(Dataset):
 if __name__ == '__main__':
     split = 0.8
     BATCH_SIZE = 32
+    input_size = 180
+    hidden_size = 100  # LSTM隐藏层的大小
+    output_size = 1  # 输出特征的维度（这里假设为1）
+    n_epochs = 100  # 训练的轮数
+    learning_rate = 0.001  # 学习率
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
+
     traffic_data = pd.read_csv('history_data.csv')
-    data = generate_sequences(traffic_data, tw=24, pw=24, target_columns="0")
-    print(data)
+    data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
+    # print(data)
     dataset = SequenceDataset(data)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     train_len = int(len(dataset) * split)
@@ -57,12 +64,7 @@ if __name__ == '__main__':
     trainloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
     testloader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 
-    input_size = 180
-    hidden_size = 100  # LSTM隐藏层的大小
-    output_size = 1  # 输出特征的维度（这里假设为1）
-    n_epochs = 100  # 训练的轮数
-    learning_rate = 0.001  # 学习率
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
+
     model = LSTMModel(input_size, hidden_size, output_size).to(device)
     criterion = nn.MSELoss()  # 均方误差损失函数
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
