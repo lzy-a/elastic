@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
         epoch_loss = train_loss / len(trainloader)
         t_losses.append(epoch_loss)
-
+        torch.save(model.state_dict(), 'lstm.pt')
         # validation step
         model.eval()
         # Loop over validation dataset
@@ -104,10 +104,10 @@ if __name__ == '__main__':
             with torch.no_grad():
                 x, y = x.to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
-                accuracy_scores += accuracy_score(y, preds)
-                precision_scores += precision_score(y, preds)
-                recall_scores += recall_score(y, preds)
-                f1_scores += f1_score(y, preds)
+                accuracy_scores += accuracy_score(y.cpu(), preds.cpu())
+                precision_scores += precision_score(y.cpu(), preds.cpu(), average='weighted')
+                recall_scores += recall_score(y.cpu(), preds.cpu(), average='weighted')
+                f1_scores += f1_score(y.cpu(), preds.cpu(), average='weighted')
                 error = criterion(preds, y)
             valid_loss += error.item()
 
