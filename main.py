@@ -80,12 +80,13 @@ if __name__ == '__main__':
         model.train()
         # Loop over train dataset
         for x, y in trainloader:
-            print(x.shape)
-            print(y.shape)
+
             optimizer.zero_grad()
             # move inputs to device
-            x = x.squeeze().to(device)
+            x = x.permute(0, 2, 1).to(device)
             y = y.squeeze().to(device)
+            print(x.shape)
+            print(y.shape)
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
