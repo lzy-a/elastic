@@ -91,6 +91,7 @@ if __name__ == '__main__':
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
+            print(f'loss: {loss.item()}')
         epoch_loss = train_loss / len(trainloader)
         t_losses.append(epoch_loss)
 
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         # Loop over validation dataset
         for x, y in testloader:
             with torch.no_grad():
-                x, y = x.to(device), y.squeeze().to(device)
+                x, y = x.permute(0, 2, 1).to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
                 error = criterion(preds, y)
             valid_loss += error.item()
