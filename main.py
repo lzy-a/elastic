@@ -46,7 +46,7 @@ class SequenceDataset(Dataset):
 if __name__ == '__main__':
     split = 0.8
     BATCH_SIZE = 1024
-    input_size = 180
+    input_size = 2880
     hidden_size = 100  # LSTM隐藏层的大小
     output_size = 1  # 输出特征的维度（这里假设为1）
     n_epochs = 100  # 训练的轮数
@@ -87,7 +87,7 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            print(f'loss: {loss.item()}')
+            # print(f'loss: {loss.item()}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
