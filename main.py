@@ -87,10 +87,11 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
+            print(f'loss: {loss.item()}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
-            print(f'loss: {loss.item()}')
+
         epoch_loss = train_loss / len(trainloader)
         t_losses.append(epoch_loss)
 
