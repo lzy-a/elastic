@@ -64,8 +64,8 @@ if __name__ == '__main__':
     trainloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
     testloader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 
-
-    model = LSTMModel(input_size, hidden_size, output_size).to(device)
+    model = LSTMModel(1, n_hidden=hidden_size, n_outputs=output_size, sequence_len=input_size, n_lstm_layers=5,
+                      device=device).to(device)
     criterion = nn.MSELoss()  # 均方误差损失函数
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
 
@@ -80,10 +80,9 @@ if __name__ == '__main__':
         model.train()
         # Loop over train dataset
         for x, y in trainloader:
-
             optimizer.zero_grad()
             # move inputs to device
-            x = x.permute(0, 2, 1).to(device)
+            x = x.to(device)
             y = y.squeeze().to(device)
             # Forward Pass
             preds = model(x).squeeze()
@@ -100,7 +99,7 @@ if __name__ == '__main__':
         # Loop over validation dataset
         for x, y in testloader:
             with torch.no_grad():
-                x, y = x.permute(0, 2, 1).to(device), y.squeeze().to(device)
+                x, y = x.to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
                 error = criterion(preds, y)
             valid_loss += error.item()
