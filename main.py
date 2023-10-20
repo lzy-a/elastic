@@ -70,7 +70,7 @@ if __name__ == '__main__':
     model = LSTMModel(1, n_hidden=hidden_size, n_outputs=output_size, sequence_len=input_size, n_lstm_layers=5,
                       device=device).to(device)
     if os.path.exists('lstm.pt'):
-        model.load_state_dict(torch.load('lstm.pt'), map_location="cpu")
+        model.load_state_dict(torch.load('lstm.pt', map_location="cpu"))
     criterion = nn.MSELoss()  # 均方误差损失函数
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
 
