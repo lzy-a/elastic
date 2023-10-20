@@ -8,7 +8,7 @@ from lstm import LSTMModel
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import random_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
+import matplotlib.pyplot as plt
 
 def generate_sequences(df: pd.DataFrame, tw: int, pw: int, target_columns, drop_targets=False):
     '''
@@ -115,4 +115,24 @@ if __name__ == '__main__':
         v_losses.append(valid_loss)
 
         print(
-            f'{epoch} - train: {epoch_loss}, valid: {valid_loss}, precision: {precision_scores}, recall: {recall_scores}, f1: {f1_scores}, accuracy: {accuracy_scores}')
+            f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
+
+        # 对原来对数据集进行推理
+        model.eval()
+        preds = []
+        labels = []
+        dataloader = DataLoader(dataset, batch_size=32)
+        for x, y in dataloader:
+            with torch.no_grad():
+                x, y = x.to(device), y.squeeze().to(device)
+                preds.append(model(x).squeeze())
+                labels.append(y)
+
+        #plot the results
+        preds = torch.cat(preds).cpu().numpy()
+        labels = torch.cat(labels).cpu().numpy()
+        plt.plot(preds, label='predictions')
+        plt.plot(labels, label='actual')
+        plt.legend()
+        plt.show()
+        plt.savefig('lstm.png')
