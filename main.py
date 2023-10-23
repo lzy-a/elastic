@@ -56,8 +56,6 @@ def plot_predict():
     labels = []
     df = pd.read_csv('data_hour.csv')
     df = df.tail(100)
-    df_normalized = scaler.fit_transform(df)
-    df = pd.DataFrame(df_normalized, columns=df.columns)
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
     # 取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
@@ -78,10 +76,8 @@ def plot_predict():
     # 将列表转换为numpy数组
     # preds = np.concatenate(preds, axis=0)
     # labels = np.concatenate(labels, axis=0)
-    preds = scaler.inverse_transform(preds)
-    labels = scaler.inverse_transform(labels)
-    print(preds)
-    print(labels)
+    preds = np.array(preds)
+    labels = np.array(labels)
     # plot the results
     plt.plot(preds, label='predictions')
     plt.plot(labels, label='actual')
@@ -101,9 +97,6 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
 
     traffic_data = pd.read_csv('data_hour.csv')
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    traffic_data_normalized = scaler.fit_transform(traffic_data.values.reshape(-1, 1))
-    traffic_data = pd.DataFrame(traffic_data_normalized,columns=traffic_data.columns)
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
