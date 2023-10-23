@@ -68,6 +68,7 @@ def plot_predict():
                 labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
+    print(preds)
     preds = np.concatenate(preds, axis=0)
     print(preds)
     labels = np.concatenate(labels, axis=0)
@@ -83,7 +84,7 @@ def plot_predict():
 if __name__ == '__main__':
     split = 0.8
     BATCH_SIZE = 256
-    input_size = 2880
+    input_size = 24
     hidden_size = 100  # LSTM隐藏层的大小
     output_size = 1  # 输出特征的维度（这里假设为1）
     n_epochs = 10  # 训练的轮数
@@ -107,7 +108,7 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load('lstm.pt', map_location="cpu"))
     criterion = nn.MSELoss()  # 均方误差损失函数
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Adam优化器
-    plot_predict()
+
     # 训练模型
     # Lists to store training and validation losses
     t_losses, v_losses = [], []
@@ -146,6 +147,8 @@ if __name__ == '__main__':
 
         valid_loss = valid_loss / len(testloader)
         v_losses.append(valid_loss)
+
+        plot_predict()
 
         print(
             f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
