@@ -61,10 +61,10 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
-            #打印y_hat的值
+            # 打印y_hat的值
             print(y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
-            #把非0维的结果进行拼接
+            # 把非0维的结果进行拼接
             if len(y_hat.shape) > 0:
                 preds.append(y_hat.cpu().numpy())
                 labels.append(y.cpu().numpy())
@@ -148,7 +148,8 @@ if __name__ == '__main__':
         valid_loss = valid_loss / len(testloader)
         v_losses.append(valid_loss)
 
-        plot_predict()
+        if epoch % 10 == 1:
+            plot_predict()
 
         print(
             f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
