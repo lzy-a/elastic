@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
     traffic_data = pd.read_csv('data_hour.csv')
     scaler = MinMaxScaler(feature_range=(-1, 1))
-    traffic_data_normalized = scaler.fit_transform(traffic_data,columns=traffic_data.columns)
-    traffic_data = pd.DataFrame(traffic_data_normalized)
+    traffic_data_normalized = scaler.fit_transform(traffic_data.values.reshape(-1, 1))
+    traffic_data = pd.DataFrame(traffic_data_normalized,columns=traffic_data.columns)
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
