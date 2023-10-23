@@ -53,8 +53,8 @@ def plot_predict():
     model.eval()
     preds = []
     labels = []
-    df = pd.read_csv('data_hour.csv', skiprows=range(1, 101))
-    test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
+    df = pd.read_csv('data_hour.csv')
+    test_data = generate_sequences(df.tail(100), tw=input_size, pw=output_size, target_columns="0")
     #取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=1)
@@ -74,6 +74,8 @@ def plot_predict():
     # 将列表转换为numpy数组
     #preds = np.concatenate(preds, axis=0)
     #labels = np.concatenate(labels, axis=0)
+    preds = np.array(preds)
+    labels = np.array(labels)
 
     # plot the results
     plt.plot(preds, label='predictions')
