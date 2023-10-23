@@ -58,6 +58,7 @@ def plot_predict():
     #取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=1)
+    print(len(dataloader))
     for x, y in dataloader:
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
@@ -71,8 +72,8 @@ def plot_predict():
                 labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
-    preds = np.concatenate(preds, axis=0)
-    labels = np.concatenate(labels, axis=0)
+    #preds = np.concatenate(preds, axis=0)
+    #labels = np.concatenate(labels, axis=0)
 
     # plot the results
     plt.plot(preds, label='predictions')
