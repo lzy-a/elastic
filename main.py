@@ -61,17 +61,15 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
-            print(y_hat.shape)
-            print(y.shape)
-            #把y_hat 拼接成1维向量并转移到cpu
-            y_hat = y_hat.cpu().numpy().reshape(-1)
-            preds.append(y_hat)
-            y = y.cpu().numpy().reshape(-1)
-            labels.append(y)
+            print(y_hat.shape)  # torch.Size([32])
+            print(y.shape)  # torch.Size([32])
+            # 把y_hat 转移到cpu, 拼接到preds中
+            preds.append(y_hat.cpu().numpy())
+            labels.append(y.cpu().numpy())
 
-
-    # print(np.array(preds).shape)
-    # print(np.array(labels).shape)
+    # 将列表转换为numpy数组
+    preds = np.concatenate(preds, axis=0)
+    labels = np.concatenate(labels, axis=0)
 
     # plot the results
     plt.plot(preds, label='predictions')
