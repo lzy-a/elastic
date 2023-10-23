@@ -84,11 +84,11 @@ def plot_predict():
 if __name__ == '__main__':
     split = 0.8
     BATCH_SIZE = 256
-    input_size = 24
+    input_size = 32
     hidden_size = 6  # LSTM隐藏层的大小
     output_size = 1  # 输出特征的维度（这里假设为1）
     n_epochs = 100  # 训练的轮数
-    learning_rate = 0.0001  # 学习率
+    learning_rate = 0.0005  # 学习率
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
 
     traffic_data = pd.read_csv('data_hour.csv')
