@@ -53,7 +53,7 @@ def plot_predict():
     model.eval()
     preds = []
     labels = []
-    df = pd.read_csv('small_history_data.csv')
+    df = pd.read_csv('data_hour.csv')
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
     dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=32)
@@ -61,6 +61,7 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
+            print("y_hat:"+y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
             #把非0维的结果进行拼接
             if len(y_hat.shape) > 0:
@@ -68,9 +69,7 @@ def plot_predict():
                 labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
-    print(preds)
     preds = np.concatenate(preds, axis=0)
-    print(preds)
     labels = np.concatenate(labels, axis=0)
 
     # plot the results
@@ -91,7 +90,7 @@ if __name__ == '__main__':
     learning_rate = 0.001  # 学习率
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
 
-    traffic_data = pd.read_csv('history_data.csv')
+    traffic_data = pd.read_csv('data_hour.csv')
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
