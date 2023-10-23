@@ -61,7 +61,8 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
-            print("y_hat:"+y_hat)
+            #打印y_hat的值
+            print(y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
             #把非0维的结果进行拼接
             if len(y_hat.shape) > 0:
