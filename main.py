@@ -61,8 +61,6 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
-            print(y_hat.shape)  # torch.Size([32])
-            print(y.shape)  # torch.Size([32])
             # 把y_hat 转移到cpu, 拼接到preds中
             #把非0维的结果进行拼接
             if len(y_hat.shape) > 0:
@@ -71,6 +69,7 @@ def plot_predict():
 
     # 将列表转换为numpy数组
     preds = np.concatenate(preds, axis=0)
+    print(preds)
     labels = np.concatenate(labels, axis=0)
 
     # plot the results
@@ -95,7 +94,7 @@ if __name__ == '__main__':
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=32)
     train_len = int(len(dataset) * split)
     lens = [train_len, len(dataset) - train_len]
     train_ds, test_ds = random_split(dataset, lens)
