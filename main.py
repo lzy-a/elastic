@@ -51,7 +51,6 @@ class SequenceDataset(Dataset):
 # 画出预测结果
 def plot_predict():
     # 对原来对数据集进行推理
-    model.eval()
     preds = []
     labels = []
     df = pd.read_csv('data_hour.csv')
