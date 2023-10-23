@@ -64,7 +64,7 @@ def plot_predict():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
             # 打印y_hat的值
-            print(y_hat)
+            print(x,y,y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
             # 把非0维的结果进行拼接
             if len(y_hat.shape) > 0:
