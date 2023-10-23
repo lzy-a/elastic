@@ -61,8 +61,8 @@ def plot_predict():
     print(len(dataloader))
     for x, y in dataloader:
         with torch.no_grad():
-            x, y = x.to(device), y.to(device)
-            pred = model(x)
+            x, y = x.to(device), y.squeeze().to(device)
+            pred = model(x).squeeze()
             # 打印y_hat的值
             print(x, y, pred)
 
