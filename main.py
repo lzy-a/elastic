@@ -60,18 +60,20 @@ def plot_predict():
     for x, y in dataloader:
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
-            preds.append(model(x).squeeze())
+            y_hat = model(x).squeeze()
+            #把y_hat 拼接成1维向量并转移到cpu
+            y_hat = y_hat.cpu().numpy().reshape(-1)
+            preds.append(y_hat)
+            y = y.cpu().numpy().reshape(-1)
             labels.append(y)
 
-    # 将预测结果和标签连接起来，并转移到CPU
-    preds_cpu = [pred.cpu() for pred in preds]
-    labels_cpu = [label.cpu() for label in labels]
-    print(preds_cpu)
-    print(labels_cpu)
+
+    print(np.array(preds).shape)
+    print(np.array(labels).shape)
 
     # plot the results
-    plt.plot(preds_cpu, label='predictions')
-    plt.plot(labels_cpu, label='actual')
+    plt.plot(preds, label='predictions')
+    plt.plot(labels, label='actual')
     plt.legend()
     plt.show()
     plt.savefig('lstm.png')
