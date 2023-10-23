@@ -127,7 +127,7 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            # print(f'loss: {loss.item()},y:{y},preds:{preds}')
+            print(f'loss: {loss.item()}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -141,7 +141,7 @@ if __name__ == '__main__':
             with torch.no_grad():
                 x, y = x.to(device), y.squeeze().to(device)
                 preds = model(x).squeeze()
-                print(f'preds:{preds},y:{y}')
+                # print(f'preds:{preds},y:{y}')
                 error = criterion(preds, y)
             valid_loss += error.item()
 
