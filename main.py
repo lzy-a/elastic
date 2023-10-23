@@ -64,8 +64,10 @@ def plot_predict():
             print(y_hat.shape)  # torch.Size([32])
             print(y.shape)  # torch.Size([32])
             # 把y_hat 转移到cpu, 拼接到preds中
-            preds.append(y_hat.cpu().numpy())
-            labels.append(y.cpu().numpy())
+            #把非0维的结果进行拼接
+            if len(y_hat.shape) > 0:
+                preds.append(y_hat.cpu().numpy())
+                labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
     preds = np.concatenate(preds, axis=0)
