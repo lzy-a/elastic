@@ -153,8 +153,6 @@ if __name__ == '__main__':
         valid_loss = valid_loss / len(testloader)
         v_losses.append(valid_loss)
 
-        if epoch % 10 == 1:
-            plot_predict()
-
         print(
             f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
+    plot_predict()
