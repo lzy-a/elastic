@@ -51,6 +51,8 @@ class SequenceDataset(Dataset):
 # 画出预测结果
 def plot_predict():
     # 对原来对数据集进行推理
+    if os.path.exists('lstm.pt'):
+        model.load_state_dict(torch.load('lstm.pt', map_location="cpu"))
     preds = []
     labels = []
     df = traffic_data.tail(100)
@@ -64,7 +66,7 @@ def plot_predict():
             x, y = x.to(device), y.squeeze().to(device)
             pred = model(x).squeeze()
             # 打印y_hat的值
-            print(x, y, pred)
+            print(y, pred)
 
             preds.append(pred.cpu().numpy())
             labels.append(y.cpu().numpy())
@@ -111,6 +113,7 @@ if __name__ == '__main__':
     # Lists to store training and validation losses
     t_losses, v_losses = [], []
     # Loop over epochs
+    best_loss = 10 ** 9
     for epoch in range(n_epochs):
         train_loss, valid_loss = 0.0, 0.0
 
@@ -125,14 +128,13 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            print(f'loss: {loss.item()}, preds: {preds}, y: {y}')
+            print(f'loss: {loss.item()}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
 
         epoch_loss = train_loss / len(trainloader)
         t_losses.append(epoch_loss)
-        torch.save(model.state_dict(), 'lstm.pt')
         # validation step
         model.eval()
         # Loop over validation dataset
@@ -145,7 +147,9 @@ if __name__ == '__main__':
 
         valid_loss = valid_loss / len(testloader)
         v_losses.append(valid_loss)
-
+        if valid_loss < best_loss:
+            best_loss = valid_loss
+            torch.save(model.state_dict(), 'lstm.pt')
         print(
             f'{epoch} - train: {epoch_loss}, valid: {valid_loss}')
     plot_predict()
