@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 
+
 def generate_sequences(df: pd.DataFrame, tw: int, pw: int, target_columns, drop_targets=False):
     '''
    df: Pandas DataFrame of the univariate time-series
@@ -54,11 +55,11 @@ def plot_predict():
     preds = []
     labels = []
     df = pd.read_csv('data_hour.csv')
-    df= df.tail(100)
+    df = df.tail(100)
     df_normalized = scaler.fit_transform(df)
-    df = pd.DataFrame(df_normalized)
+    df = pd.DataFrame(df_normalized.values.reshape(-1, 1))
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
-    #取test_data的最后100个数据
+    # 取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=1)
     print(len(dataloader))
@@ -67,7 +68,7 @@ def plot_predict():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
             # 打印y_hat的值
-            print(x,y,y_hat)
+            print(x, y, y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
             # 把非0维的结果进行拼接
 
@@ -75,8 +76,8 @@ def plot_predict():
             labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
-    #preds = np.concatenate(preds, axis=0)
-    #labels = np.concatenate(labels, axis=0)
+    # preds = np.concatenate(preds, axis=0)
+    # labels = np.concatenate(labels, axis=0)
     preds = scaler.inverse_transform(preds)
     labels = scaler.inverse_transform(labels)
     print(preds)
@@ -101,7 +102,7 @@ if __name__ == '__main__':
 
     traffic_data = pd.read_csv('data_hour.csv')
     scaler = MinMaxScaler(feature_range=(-1, 1))
-    traffic_data_normalized = scaler.fit_transform(traffic_data)
+    traffic_data_normalized = scaler.fit_transform(traffic_data.values.reshape(-1, 1))
     traffic_data = pd.DataFrame(traffic_data_normalized)
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
