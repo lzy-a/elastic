@@ -50,6 +50,7 @@ class SequenceDataset(Dataset):
 
 # 画出预测结果
 def plot_predict():
+    model.eval()
     # 对原来对数据集进行推理
     if os.path.exists('lstm.pt'):
         model.load_state_dict(torch.load('lstm.pt', map_location="cpu"))
@@ -65,8 +66,7 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             pred = model(x).squeeze()
-            # 打印y_hat的值
-            print(y, pred)
+            print(x, y, pred)
 
             preds.append(pred.cpu().numpy())
             labels.append(y.cpu().numpy())
