@@ -60,9 +60,13 @@ def plot_predict():
             preds.append(model(x).squeeze())
             labels.append(y)
 
+    # 将预测结果和标签连接起来，并转移到CPU
+    preds = torch.cat(preds).cpu().numpy()
+    labels = torch.cat(labels).cpu().numpy()
+
     # plot the results
-    plt.plot(preds.cpu().numpy(), label='predictions')
-    plt.plot(labels.cpu().numpy(), label='actual')
+    plt.plot(preds, label='predictions')
+    plt.plot(labels, label='actual')
     plt.legend()
     plt.show()
     plt.savefig('lstm.png')
