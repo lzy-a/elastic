@@ -61,6 +61,8 @@ def plot_predict():
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
             y_hat = model(x).squeeze()
+            print(y_hat.shape)
+            print(y.shape)
             #把y_hat 拼接成1维向量并转移到cpu
             y_hat = y_hat.cpu().numpy().reshape(-1)
             preds.append(y_hat)
