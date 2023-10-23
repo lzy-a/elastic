@@ -55,8 +55,9 @@ def plot_predict():
     labels = []
     df = pd.read_csv('data_hour.csv')
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
-    dataset = SequenceDataset(test_data)
-    dataloader = DataLoader(dataset, batch_size=32)
+    #取test_data的最后100个数据
+    dataset = SequenceDataset(test_data[len(test_data)-100:])
+    dataloader = DataLoader(dataset, batch_size=1)
     for x, y in dataloader:
         with torch.no_grad():
             x, y = x.to(device), y.squeeze().to(device)
