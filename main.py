@@ -53,8 +53,7 @@ def plot_predict():
     # 对原来对数据集进行推理
     preds = []
     labels = []
-    df = pd.read_csv('data_hour.csv')
-    df = df.tail(100)
+    df = traffic_data.tail(100)
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
     # 取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
@@ -62,19 +61,14 @@ def plot_predict():
     print(len(dataloader))
     for x, y in dataloader:
         with torch.no_grad():
-            x, y = x.to(device), y.squeeze().to(device)
-            y_hat = model(x).squeeze()
+            x, y = x.to(device), y.to(device)
+            pred = model(x)
             # 打印y_hat的值
-            print(x, y, y_hat)
-            # 把y_hat 转移到cpu, 拼接到preds中
-            # 把非0维的结果进行拼接
+            print(x, y, pred)
 
-            preds.append(y_hat.cpu().numpy())
+            preds.append(pred.cpu().numpy())
             labels.append(y.cpu().numpy())
 
-    # 将列表转换为numpy数组
-    # preds = np.concatenate(preds, axis=0)
-    # labels = np.concatenate(labels, axis=0)
     preds = np.array(preds)
     labels = np.array(labels)
     # plot the results
