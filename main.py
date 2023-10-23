@@ -128,7 +128,7 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            print(f'loss: {loss.item()}')
+            print(f'loss: {loss.item()},y:{y},preds:{preds}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
