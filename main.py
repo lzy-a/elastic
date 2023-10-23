@@ -112,7 +112,6 @@ if __name__ == '__main__':
     # 训练模型
     # Lists to store training and validation losses
     t_losses, v_losses = [], []
-    accuracy_scores, precision_scores, recall_scores, f1_scores = 0, 0, 0, 0
     # Loop over epochs
     for epoch in range(n_epochs):
         train_loss, valid_loss = 0.0, 0.0
@@ -128,7 +127,7 @@ if __name__ == '__main__':
             # Forward Pass
             preds = model(x).squeeze()
             loss = criterion(preds, y)  # compute batch loss
-            print(f'loss: {loss.item()}')
+            print(f'loss: {loss.item()},preds: {preds},y: {y}')
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
