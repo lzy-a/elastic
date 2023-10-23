@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import random_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
-
+from sklearn.preprocessing import MinMaxScaler
 
 def generate_sequences(df: pd.DataFrame, tw: int, pw: int, target_columns, drop_targets=False):
     '''
@@ -54,7 +54,10 @@ def plot_predict():
     preds = []
     labels = []
     df = pd.read_csv('data_hour.csv')
-    test_data = generate_sequences(df.tail(100), tw=input_size, pw=output_size, target_columns="0")
+    df= df.tail(100)
+    df_normalized = scaler.fit_transform(df)
+    df = pd.DataFrame(df_normalized)
+    test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
     #取test_data的最后100个数据
     dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=1)
@@ -74,8 +77,8 @@ def plot_predict():
     # 将列表转换为numpy数组
     #preds = np.concatenate(preds, axis=0)
     #labels = np.concatenate(labels, axis=0)
-    preds = np.array(preds)
-    labels = np.array(labels)
+    preds = scaler.inverse_transform(preds)
+    labels = scaler.inverse_transform(labels)
     print(preds)
     print(labels)
     # plot the results
@@ -97,6 +100,9 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  # 判断是否有GPU加速
 
     traffic_data = pd.read_csv('data_hour.csv')
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    traffic_data_normalized = scaler.fit_transform(traffic_data)
+    traffic_data = pd.DataFrame(traffic_data_normalized)
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
