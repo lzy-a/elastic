@@ -53,6 +53,9 @@ def plot_predict():
     model.eval()
     preds = []
     labels = []
+    df = pd.read_csv('small_history_data.csv')
+    test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
+    dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=32)
     for x, y in dataloader:
         with torch.no_grad():
@@ -61,12 +64,12 @@ def plot_predict():
             labels.append(y)
 
     # 将预测结果和标签连接起来，并转移到CPU
-    preds = torch.cat(preds).cpu().numpy()
-    labels = torch.cat(labels).cpu().numpy()
+    preds_cpu = [pred.cpu() for pred in preds]
+    labels_cpu = [label.cpu() for label in labels]
 
     # plot the results
-    plt.plot(preds, label='predictions')
-    plt.plot(labels, label='actual')
+    plt.plot(preds_cpu, label='predictions')
+    plt.plot(labels_cpu, label='actual')
     plt.legend()
     plt.show()
     plt.savefig('lstm.png')
