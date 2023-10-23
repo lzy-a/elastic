@@ -68,8 +68,8 @@ def plot_predict():
             labels.append(y)
 
 
-    print(np.array(preds).shape)
-    print(np.array(labels).shape)
+    # print(np.array(preds).shape)
+    # print(np.array(labels).shape)
 
     # plot the results
     plt.plot(preds, label='predictions')
