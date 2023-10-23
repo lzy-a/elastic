@@ -136,7 +136,7 @@ if __name__ == '__main__':
         epoch_loss = train_loss / len(trainloader)
         t_losses.append(epoch_loss)
         # validation step
-        model.eval()
+        # model.eval()
         # Loop over validation dataset
         for x, y in testloader:
             with torch.no_grad():
