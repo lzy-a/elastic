@@ -66,6 +66,8 @@ def plot_predict():
     # 将预测结果和标签连接起来，并转移到CPU
     preds_cpu = [pred.cpu() for pred in preds]
     labels_cpu = [label.cpu() for label in labels]
+    print(preds_cpu)
+    print(labels_cpu)
 
     # plot the results
     plt.plot(preds_cpu, label='predictions')
