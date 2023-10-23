@@ -50,10 +50,10 @@ class SequenceDataset(Dataset):
 
 # 画出预测结果
 def plot_predict():
-    model.eval()
     # 对原来对数据集进行推理
     if os.path.exists('lstm.pt'):
         model.load_state_dict(torch.load('lstm.pt', map_location="cpu"))
+    model.eval()
     preds = []
     labels = []
     df = traffic_data.tail(100)
