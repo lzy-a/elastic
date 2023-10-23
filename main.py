@@ -95,7 +95,7 @@ if __name__ == '__main__':
     data = generate_sequences(traffic_data, tw=input_size, pw=output_size, target_columns="0")
     print("data gerneated")
     dataset = SequenceDataset(data)
-    dataloader = DataLoader(dataset, batch_size=32)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True, drop_last=True)
     train_len = int(len(dataset) * split)
     lens = [train_len, len(dataset) - train_len]
     train_ds, test_ds = random_split(dataset, lens)
