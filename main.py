@@ -76,7 +76,8 @@ def plot_predict():
     #labels = np.concatenate(labels, axis=0)
     preds = np.array(preds)
     labels = np.array(labels)
-
+    print(preds)
+    print(labels)
     # plot the results
     plt.plot(preds, label='predictions')
     plt.plot(labels, label='actual')
