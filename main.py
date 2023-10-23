@@ -53,10 +53,10 @@ def plot_predict():
     model.eval()
     preds = []
     labels = []
-    df = pd.read_csv('data_hour.csv')
+    df = pd.read_csv('data_hour.csv', skiprows=range(1, 101))
     test_data = generate_sequences(df, tw=input_size, pw=output_size, target_columns="0")
     #取test_data的最后100个数据
-    dataset = SequenceDataset(test_data[len(test_data)-100:])
+    dataset = SequenceDataset(test_data)
     dataloader = DataLoader(dataset, batch_size=1)
     for x, y in dataloader:
         with torch.no_grad():
