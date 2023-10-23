@@ -67,9 +67,9 @@ def plot_predict():
             print(x,y,y_hat)
             # 把y_hat 转移到cpu, 拼接到preds中
             # 把非0维的结果进行拼接
-            if len(y_hat.shape) > 0:
-                preds.append(y_hat.cpu().numpy())
-                labels.append(y.cpu().numpy())
+
+            preds.append(y_hat.cpu().numpy())
+            labels.append(y.cpu().numpy())
 
     # 将列表转换为numpy数组
     #preds = np.concatenate(preds, axis=0)
