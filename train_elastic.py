@@ -176,9 +176,9 @@ class DeepfmDataset(torch.utils.data.Dataset):
         return 10 ** 5
 
     def __getitem__(self, idx):
-        if len(self.buffer) == 0:
-            # Buffer is empty, return None or handle this case as needed
-            return None
+        while len(self.buffer) == 0:
+            # 等待一段时间，然后重试
+            time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
         return self.buffer.pop(0)
 
 
