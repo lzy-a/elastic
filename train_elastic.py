@@ -45,7 +45,7 @@ sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
-topic = 'stream-6'
+topic = 'stream5040'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
@@ -124,7 +124,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=50000, num_consumers=4):
+    def __init__(self, buffer_size=50000, num_consumers=8):
         self.buffer_size = buffer_size
         self.buffer = []
         self.buffer_lock = threading.Lock()
