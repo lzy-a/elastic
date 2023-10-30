@@ -45,11 +45,11 @@ sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
-topic = 'stream8'
+topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 4
+num_consumers = 10
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
