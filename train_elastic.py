@@ -169,16 +169,14 @@ class DeepfmDataset(torch.utils.data.Dataset):
                                 'timestamp': timestamp
                             })
 
+    def __len__(self):
+        return 10 ** 5
 
-def __len__(self):
-    return 10 ** 5
-
-
-def __getitem__(self, idx):
-    while len(self.buffer) == 0:
-        # 等待一段时间，然后重试
-        time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
-    return self.buffer.pop(0)
+    def __getitem__(self, idx):
+        while len(self.buffer) == 0:
+            # 等待一段时间，然后重试
+            time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
+        return self.buffer.pop(0)
 
 
 # 定义自定义数据加载器
