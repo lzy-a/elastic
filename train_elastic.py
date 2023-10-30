@@ -167,6 +167,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'timestamp': timestamp
                         })
             # print("buffer full")
+            global full_cnt
             full_cnt = full_cnt + 1
 
     def __len__(self):
@@ -177,6 +178,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
         while len(self.buffer) == 0:
             # 等待一段时间，然后重试
             # print("sleep 0.01 for buffer refill")
+            global empty_cnt
             empty_cnt = empty_cnt + 1
             time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
 
