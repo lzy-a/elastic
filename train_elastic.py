@@ -147,6 +147,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
         # 分配分区并加入消费者组
         assigned_partitions = consumer.assignment()
         consumer.commit()
+        global full_cnt
+        full_cnt = 1
         print(f"Consumer {consumer_id} initialized and assigned to partitions: {assigned_partitions}")
         while True:
             while len(self.buffer) < self.buffer_size:
@@ -167,7 +169,6 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'timestamp': timestamp
                         })
             # print("buffer full")
-            global full_cnt
             full_cnt = full_cnt + 1
 
     def __len__(self):
