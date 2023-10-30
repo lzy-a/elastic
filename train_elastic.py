@@ -141,7 +141,11 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
-        kafka_setup()
+        consumer.subscribe([topic])  # 订阅主题
+        # 分配分区并加入消费者组
+        assigned_partitions = consumer.assignment()
+        consumer.commit()
+        print(f"Consumer {consumer_id} initialized and assigned to partitions: {assigned_partitions}")
         while True:
             while len(self.buffer) < self.buffer_size:
                 start = time.time()
