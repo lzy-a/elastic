@@ -127,6 +127,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer_size=5000, num_consumers=4):
         self.buffer_size = buffer_size
         self.buffer = []
+        self.buffer_lock = threading.Lock()
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.num_consumers = num_consumers
         self.consumer_queues = [queue.Queue() for _ in range(num_consumers)]
@@ -269,7 +270,6 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset()
-    kafka_setup()
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     global i
@@ -331,7 +331,7 @@ def kafka_setup():
             else:
                 member_count = len(group_des.members)
                 break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_consumers}")
         time.sleep(0.1)
 
 
