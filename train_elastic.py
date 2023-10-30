@@ -155,31 +155,30 @@ class DeepfmDataset(torch.utils.data.Dataset):
                 for i in range(self.num_consumers):
                     if not self.consumer_queues[i].empty():
                         message = self.consumer_queues[i].get()
-                        message_dict = json.loads(message.value.decode('utf-8'))
+                        if message is not None:  # 检查消息不是 None
+                            message_dict = json.loads(message.value.decode('utf-8'))
+                            train_data = message_dict['train']
+                            label_data = message_dict['label']
+                            train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+                            label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+                            timestamp = message.timestamp
+                            get_item_g.set(time.time() - start)
+                            self.buffer.append({
+                                'input_data': train_tensor,
+                                'labels': label_tensor,
+                                'timestamp': timestamp
+                            })
 
-                        train_data = message_dict['train']
-                        label_data = message_dict['label']
 
-                        train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-                        label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+def __len__(self):
+    return 10 ** 5
 
-                        timestamp = message.timestamp
-                        get_item_g.set(time.time() - start)
 
-                        self.buffer.append({
-                            'input_data': train_tensor,
-                            'labels': label_tensor,
-                            'timestamp': timestamp
-                        })
-
-    def __len__(self):
-        return 10 ** 5
-
-    def __getitem__(self, idx):
-        while len(self.buffer) == 0:
-            # 等待一段时间，然后重试
-            time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
-        return self.buffer.pop(0)
+def __getitem__(self, idx):
+    while len(self.buffer) == 0:
+        # 等待一段时间，然后重试
+        time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
+    return self.buffer.pop(0)
 
 
 # 定义自定义数据加载器
@@ -201,7 +200,6 @@ class KafkaDataset(torch.utils.data.Dataset):
             'labels': labels,
             'timestamp': timestamp
         }
-
 
 
 def save_checkpoint(epoch, model, optimizer, path):
@@ -332,7 +330,6 @@ def train():
             i += 1
 
 
-
 # 先初始化好kafka再dist init
 def kafka_setup():
     ws = os.environ["WORLD_SIZE"]
@@ -356,7 +353,7 @@ def run():
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
 
-    #kafka_setup()
+    # kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"
     env_dict = {
