@@ -171,13 +171,14 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         start = time.time()
+        while len(self.buffer) == 0:
+            # 等待一段时间，然后重试
+            print("sleep 0.01 for buffer refill")
+            time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
+
         with self.buffer_lock:
-            while len(self.buffer) == 0:
-                # 等待一段时间，然后重试
-                print("sleep 0.01 for buffer refill")
-                time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
             data = self.buffer.pop(0)
-            get_item_g.set(time.time() - start)
+        get_item_g.set(time.time() - start)
         return data
 
 
