@@ -233,6 +233,7 @@ def load_checkpoint(path):
 
 
 def get_auc(loader, model):
+    start = time.time()
     pred, target = [], []
     model.eval()
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -246,6 +247,7 @@ def get_auc(loader, model):
             target += list(y.cpu().numpy())  # 将y移动到CPU上
     auc = roc_auc_score(target, pred)
     auc_g.set(auc)
+    print(f"get auc cost {time.time() - start}")
     return auc
 
 
