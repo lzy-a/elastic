@@ -138,36 +138,26 @@ class DeepfmDataset(torch.utils.data.Dataset):
             thread.start()
             self.consumer_threads.append(thread)
 
-        # Start an asynchronous thread to refill the buffer continuously
-        self.refill_thread = threading.Thread(target=self.refill_buffer)
-        self.refill_thread.start()
-
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
-        for message in consumer:
-            self.consumer_queues[consumer_id].put(message)
-
-    def refill_buffer(self):
-        start = time.time()
         while True:
             while len(self.buffer) < self.buffer_size:
-                # Get data from Kafka consumers
-                for i in range(self.num_consumers):
-                    if not self.consumer_queues[i].empty():
-                        message = self.consumer_queues[i].get()
-                        if message is not None:  # 检查消息不是 None
-                            message_dict = json.loads(message.value.decode('utf-8'))
-                            train_data = message_dict['train']
-                            label_data = message_dict['label']
-                            train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-                            label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
-                            timestamp = message.timestamp
-                            get_item_g.set(time.time() - start)
-                            self.buffer.append({
-                                'input_data': train_tensor,
-                                'labels': label_tensor,
-                                'timestamp': timestamp
-                            })
+                start = time.time()
+                message = next(consumer)
+                if message is not None:
+                    message_dict = json.loads(message.value.decode('utf-8'))
+                    train_data = message_dict['train']
+                    label_data = message_dict['label']
+                    train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+                    label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+                    timestamp = message.timestamp
+                    get_item_g.set(time.time() - start)
+                    with self.buffer_lock:
+                        self.buffer.append({
+                            'input_data': train_tensor,
+                            'labels': label_tensor,
+                            'timestamp': timestamp
+                        })
 
     def __len__(self):
         return 10 ** 5
