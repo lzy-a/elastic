@@ -181,7 +181,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             # print("sleep 0.01 for buffer refill")
             global empty_cnt
             empty_cnt = empty_cnt + 1
-            #time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
+            time.sleep(0.005)  # 0.005秒的等待时间，你可以根据需要调整
 
         with self.buffer_lock:
             data = self.buffer.pop(0)
