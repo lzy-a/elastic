@@ -45,11 +45,13 @@ sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
-topic = 'stream5040'
+topic = 'stream8'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 6
+num_consumers = 4
+full_cnt = 0
+empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
@@ -164,7 +166,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'labels': label_tensor,
                             'timestamp': timestamp
                         })
-            print("buffer full")
+            # print("buffer full")
+            full_cnt = full_cnt + 1
 
     def __len__(self):
         return 10 ** 5
@@ -173,7 +176,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
         start = time.time()
         while len(self.buffer) == 0:
             # 等待一段时间，然后重试
-            print("sleep 0.01 for buffer refill")
+            # print("sleep 0.01 for buffer refill")
+            empty_cnt = empty_cnt + 1
             time.sleep(0.01)  # 0.1秒的等待时间，你可以根据需要调整
 
         with self.buffer_lock:
@@ -320,6 +324,7 @@ def train():
             sync_span_g.set(time.time() - start)
             if i % 500 == 99:
                 start = time.time()
+                print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             start = time.time()
