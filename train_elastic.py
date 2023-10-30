@@ -141,6 +141,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+        kafka_setup()
         while True:
             while len(self.buffer) < self.buffer_size:
                 start = time.time()
