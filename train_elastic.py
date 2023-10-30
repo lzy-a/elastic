@@ -124,7 +124,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=5000, num_consumers=4):
+    def __init__(self, buffer_size=50000, num_consumers=4):
         self.buffer_size = buffer_size
         self.buffer = []
         self.buffer_lock = threading.Lock()
@@ -164,7 +164,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'labels': label_tensor,
                             'timestamp': timestamp
                         })
-            print("buffer full")
+            # print("buffer full")
 
     def __len__(self):
         return 10 ** 5
