@@ -49,7 +49,7 @@ topic = 'stream-6'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 4
+num_consumers = 6
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
@@ -281,7 +281,7 @@ def train():
 
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DeepfmDataset()
+    dataset = DeepfmDataset(num_consumers=num_consumers)
     dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     global i
