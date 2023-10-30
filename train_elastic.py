@@ -50,8 +50,8 @@ group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 num_consumers = 4
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
-consumer.subscribe([topic])
+# consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+# consumer.subscribe([topic])
 
 global_batch_size = 1024
 
@@ -203,16 +203,6 @@ class KafkaDataset(torch.utils.data.Dataset):
         }
 
 
-class ToyModel(nn.Module):
-    def __init__(self):
-        super(ToyModel, self).__init__()
-        self.net1 = nn.Linear(10, 10)
-        self.relu = nn.ReLU()
-        self.net2 = nn.Linear(10, 5)
-
-    def forward(self, x):
-        return self.net2(self.relu(self.net1(x)))
-
 
 def save_checkpoint(epoch, model, optimizer, path):
     # 创建一个临时文件路径
@@ -342,14 +332,6 @@ def train():
             i += 1
 
 
-# 不要在Kafka消费者组初始化完成之前进入训练过程
-def kafka_warmup():
-    # 订阅主题并加入消费者组
-    start = time.time()
-    while time.time() - start < 10:
-        time.sleep(1)
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
-
 
 # 先初始化好kafka再dist init
 def kafka_setup():
@@ -365,7 +347,6 @@ def kafka_setup():
                 member_count = len(group_des.members)
                 break
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
         time.sleep(0.1)
 
 
