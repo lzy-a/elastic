@@ -164,6 +164,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'labels': label_tensor,
                             'timestamp': timestamp
                         })
+            print("buffer full")
 
     def __len__(self):
         return 10 ** 5
