@@ -253,7 +253,6 @@ def get_auc(loader, model):
     return auc
 
 
-
 def train():
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
@@ -294,7 +293,7 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(num_consumers=num_consumers)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True)
 
     global i
     i = 0
