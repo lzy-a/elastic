@@ -49,7 +49,7 @@ topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 10
+num_consumers = 2
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
@@ -142,7 +142,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
             self.consumer_threads.append(thread)
 
     def kafka_consumer(self, consumer_id, topic):
-        consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+        consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
+                                 max_poll_records=5000)
         consumer.subscribe([topic])  # 订阅主题
         # 分配分区并加入消费者组
         assigned_partitions = consumer.assignment()
