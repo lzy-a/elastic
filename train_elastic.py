@@ -308,7 +308,7 @@ def train():
             labels = sample["labels"].cuda(local_rank)
             get_sample_time = time.time() - start
             get_sample_g.set(get_sample_time)
-            timestamp = sample["timestamp"] / 1000
+            timestamp = sample["timestamp"][0].item() / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
