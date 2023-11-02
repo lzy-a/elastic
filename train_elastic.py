@@ -187,9 +187,11 @@ class DeepfmDataset(torch.utils.data.Dataset):
         with self.buffer_lock:
             data = self.buffer.pop(0)
         get_item_g.set(time.time() - start)
+        input_data = data['input_data']
+        label_data = data['labels']
         tensor_data = {
-            'input_data': data['input_data'].cuda(self.local_rank),
-            'labels': data['labels'].cuda(self.local_rank),
+            'input_data': torch.tensor(list(input_data.values())).float().cuda(self.local_rank),
+            'labels': torch.tensor(list(label_data.values())).float().cuda(self.local_rank),
             'timestamp': data['timestamp']
         }
         return tensor_data
