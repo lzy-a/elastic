@@ -130,7 +130,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer_size=10000, num_consumers=8):
         self.buffer_size = buffer_size
-        self.buffer = []
+        self.buffer = queue.Queue()
         self.buffer_lock = threading.Lock()
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.num_consumers = num_consumers
@@ -166,7 +166,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                     timestamp = message.timestamp
                     get_item_g.set(time.time() - start)
                     with self.buffer_lock:
-                        self.buffer.append({
+                        self.buffer.put({
                             'input_data': train_data,
                             'labels': label_data,
                             'timestamp': timestamp
@@ -180,15 +180,15 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         start = time.time()
-        while len(self.buffer) == 0:
+        while self.buffer.qsize() == 0:
             # 等待一段时间，然后重试
             # print("sleep 0.01 for buffer refill")
             global empty_cnt
             empty_cnt = empty_cnt + 1
-            time.sleep(0.001)  # 0.005秒的等待时间，你可以根据需要调整
+            time.sleep(0.0005)  # 0.0005秒的等待时间，你可以根据需要调整
 
         with self.buffer_lock:
-            data = self.buffer.pop(0)
+            data = self.buffer.get()
         get_item_g.set(time.time() - start)
         return data
 
