@@ -314,13 +314,12 @@ def train():
             input_data = sample["input_data"].cuda(local_rank)
             labels = sample["labels"].cuda(local_rank)
             to_cuda_g.set(time.time() - cuda_start)
-            timestamp = sample["timestamp"][0].item() / 1000
-            lag = time.time() - timestamp
-            lag_g.set(lag)
             get_data_all_g.set(time.time() - start)
             # print(f"[{os.getpid()}] Received input data: {input_data}")
             # print(f"[{os.getpid()}] Received labels: {labels}")
-
+            timestamp = sample["timestamp"][0].item() / 1000
+            lag = time.time() - timestamp
+            lag_g.set(lag)
             # 前向传播+求梯度
             start = time.time()
             optimizer.zero_grad()
