@@ -33,6 +33,7 @@ from multiprocessing import Process, Queue
 
 from deepfm import deepfm
 
+step_g = Gauge('step', 'step')
 auc_g = Gauge('auc', 'auc')
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
@@ -301,6 +302,7 @@ def train():
     step_timer = time.time()
     auc_timer = time.time()
     model.train().to(local_rank)
+    step_start = time.time()
     while True:
         start = time.time()
         for sample in dataloader:
@@ -332,6 +334,8 @@ def train():
             start = time.time()
             optimizer.step()
             sync_span_g.set(time.time() - start)
+            step_g.set(time.time() - step_start)
+            step_start = time.time()
             if i % 500 == 99:
                 start = time.time()
                 print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
