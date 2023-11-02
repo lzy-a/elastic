@@ -40,6 +40,8 @@ loss_g = Gauge('loss', 'loss')
 save_g = Gauge('save', 'save cost time')
 get_item_g = Gauge('get_item', 'read a sample cost time')
 get_sample_g = Gauge('get_sample', 'read samples cost time')
+to_cuda_g = Gauge('to_cuda', 'move to cost time')
+get_data_all_g = Gauge('get_data_all_time', 'get data cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
@@ -304,10 +306,13 @@ def train():
     while True:
         start = time.time()
         for sample in dataloader:
-            input_data = sample["input_data"].cuda(local_rank)
-            labels = sample["labels"].cuda(local_rank)
             get_sample_time = time.time() - start
             get_sample_g.set(get_sample_time)
+            cuda_start = time.time()
+            input_data = sample["input_data"].cuda(local_rank)
+            labels = sample["labels"].cuda(local_rank)
+            to_cuda_g.set(time.time() - cuda_start)
+            get_data_all_g.set(time.time() - start)
             timestamp = sample["timestamp"][0].item() / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
