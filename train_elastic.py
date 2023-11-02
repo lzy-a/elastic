@@ -51,7 +51,7 @@ topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 2
+num_consumers = 1
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
@@ -128,7 +128,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=10000, num_consumers=8):
+    def __init__(self, buffer_size=10000, num_consumers=1):
         self.buffer_size = buffer_size
         self.buffer = queue.Queue()
         self.buffer_lock = threading.Lock()
@@ -148,8 +148,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                                  )
         consumer.subscribe([topic])  # 订阅主题
         # 分配分区并加入消费者组
-        assigned_partitions = consumer.assignment()
-        consumer.commit()
+        kafka_setup()
         global full_cnt
         full_cnt = 1
         print(f"Consumer {consumer_id} initialized and assigned to partitions: {assigned_partitions}")
