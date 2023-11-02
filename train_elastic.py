@@ -154,7 +154,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
         full_cnt = 1
         print(f"Consumer {consumer_id} initialized and assigned to partitions: {assigned_partitions}")
         while True:
-            while len(self.buffer) < self.buffer_size:
+            while self.buffer.qsize() < self.buffer_size:
                 start = time.time()
                 message = next(consumer)
                 if message is not None:
