@@ -17,7 +17,7 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Sampler
 from sklearn.metrics import log_loss, roc_auc_score
 
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -159,8 +159,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
                     message_dict = json.loads(message.value.decode('utf-8'))
                     train_data = message_dict['train']
                     label_data = message_dict['label']
-                    # train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-                    # label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+                    train_data = torch.tensor(list(train_data.values())).float()
+                    label_data = torch.tensor(list(label_data.values())).float()
                     timestamp = message.timestamp
                     get_item_g.set(time.time() - start)
                     with self.buffer_lock:
@@ -253,23 +253,6 @@ def get_auc(loader, model):
     return auc
 
 
-def custom_collate(batch):
-    local_rank = int(os.environ["LOCAL_RANK"])
-    # batch 是一个样本列表，每个样本是一个字典，包含 'input_data' 和 'labels'
-    input_data_batch = [sample['input_data'] for sample in batch]
-    labels_batch = [sample['labels'] for sample in batch]
-    timestamp_batch = [sample['timestamp'] for sample in batch]
-
-    # 移动数据到 GPU
-    input_data_batch = [torch.tensor(list(data.values())).float().cuda(local_rank) for data in input_data_batch]
-    labels_batch = [torch.tensor(list(data.values())).float().cuda(local_rank) for data in labels_batch]
-
-    return {
-        'input_data': input_data_batch,
-        'labels': labels_batch,
-        'timestamp': timestamp_batch
-    }
-
 
 def train():
     sparse_features = ['C' + str(i) for i in range(1, 27)]
@@ -311,7 +294,7 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(num_consumers=num_consumers)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size, collate_fn=custom_collate)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size)
 
     global i
     i = 0
@@ -322,11 +305,11 @@ def train():
     while True:
         start = time.time()
         for sample in dataloader:
-            input_data = sample["input_data"]
-            labels = sample["labels"]
+            input_data = sample["input_data"].cuda(local_rank)
+            labels = sample["labels"].cuda(local_rank)
             get_sample_time = time.time() - start
             get_sample_g.set(get_sample_time)
-            timestamp = sample["timestamp"][0].item() / 1000
+            timestamp = sample["timestamp"] / 1000
             print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
             lag = time.time() - timestamp
