@@ -128,7 +128,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=50000, num_consumers=8):
+    def __init__(self, buffer_size=10000, num_consumers=8):
         self.buffer_size = buffer_size
         self.buffer = []
         self.buffer_lock = threading.Lock()
@@ -145,7 +145,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
-                                 max_poll_records=5000)
+                                 )
         consumer.subscribe([topic])  # 订阅主题
         # 分配分区并加入消费者组
         assigned_partitions = consumer.assignment()
@@ -185,7 +185,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             # print("sleep 0.01 for buffer refill")
             global empty_cnt
             empty_cnt = empty_cnt + 1
-            time.sleep(0.005)  # 0.005秒的等待时间，你可以根据需要调整
+            time.sleep(0.001)  # 0.005秒的等待时间，你可以根据需要调整
 
         with self.buffer_lock:
             data = self.buffer.pop(0)
