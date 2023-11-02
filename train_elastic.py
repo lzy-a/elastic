@@ -327,10 +327,7 @@ def train():
             outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
-            if rank == 0:
-                loss_value = loss.item()
-                loss_g.set(loss_value)
-                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
+            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
@@ -345,6 +342,9 @@ def train():
             # 测吞吐量
             step = step + 1
             if step == 10:
+                loss_value = loss.item()
+                loss_g.set(loss_value)
+                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
                 throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
                 step = 0
                 step_timer = time.time()
