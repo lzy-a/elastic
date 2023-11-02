@@ -311,7 +311,7 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(num_consumers=num_consumers)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, collate_fn=custom_collate)
 
     global i
     i = 0
