@@ -148,7 +148,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                                  )
         consumer.subscribe([topic])  # 订阅主题
         # 分配分区并加入消费者组
-        kafka_setup()
+        kafka_setup(consumer)
         global full_cnt
         full_cnt = 1
         while True:
@@ -346,7 +346,7 @@ def train():
 
 
 # 先初始化好kafka再dist init
-def kafka_setup():
+def kafka_setup(consumer):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
     while member_count < int(ws) * num_consumers:
@@ -359,6 +359,7 @@ def kafka_setup():
                 member_count = len(group_des.members)
                 break
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_consumers}")
+        consumer.poll(1)
         time.sleep(0.1)
 
 
