@@ -188,14 +188,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
         with self.buffer_lock:
             data = self.buffer.pop(0)
         get_item_g.set(time.time() - start)
-        input_data = data['input_data']
-        label_data = data['labels']
-        tensor_data = {
-            'input_data': torch.tensor(list(input_data.values())).float().cuda(self.local_rank),
-            'labels': torch.tensor(list(label_data.values())).float().cuda(self.local_rank),
-            'timestamp': data['timestamp']
-        }
-        return tensor_data
+        return data
 
 
 # 定义自定义数据加载器
@@ -258,6 +251,24 @@ def get_auc(loader, model):
     auc_g.set(auc)
     print(f"get auc cost {time.time() - start}")
     return auc
+
+
+def custom_collate(batch):
+    local_rank = int(os.environ["LOCAL_RANK"])
+    # batch 是一个样本列表，每个样本是一个字典，包含 'input_data' 和 'labels'
+    input_data_batch = [sample['input_data'] for sample in batch]
+    labels_batch = [sample['labels'] for sample in batch]
+    timestamp_batch = [sample['timestamp'] for sample in batch]
+
+    # 移动数据到 GPU
+    input_data_batch = [data.cuda(local_rank) for data in input_data_batch]
+    labels_batch = [data.cuda(local_rank) for data in labels_batch]
+
+    return {
+        'input_data': input_data_batch,
+        'labels': labels_batch,
+        'timestamp': timestamp_batch
+    }
 
 
 def train():
