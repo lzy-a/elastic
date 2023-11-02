@@ -261,8 +261,8 @@ def custom_collate(batch):
     timestamp_batch = [sample['timestamp'] for sample in batch]
 
     # 移动数据到 GPU
-    input_data_batch = [data.cuda(local_rank) for data in input_data_batch]
-    labels_batch = [data.cuda(local_rank) for data in labels_batch]
+    input_data_batch = [torch.tensor(list(data.values())).float().cuda(local_rank) for data in input_data_batch]
+    labels_batch = [torch.tensor(list(data.values())).float().cuda(local_rank) for data in labels_batch]
 
     return {
         'input_data': input_data_batch,
