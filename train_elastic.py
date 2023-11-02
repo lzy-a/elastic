@@ -159,14 +159,14 @@ class DeepfmDataset(torch.utils.data.Dataset):
                     message_dict = json.loads(message.value.decode('utf-8'))
                     train_data = message_dict['train']
                     label_data = message_dict['label']
-                    train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-                    label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+                    # train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+                    # label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
                     timestamp = message.timestamp
                     get_item_g.set(time.time() - start)
                     with self.buffer_lock:
                         self.buffer.append({
-                            'input_data': train_tensor,
-                            'labels': label_tensor,
+                            'input_data': train_data,
+                            'labels': label_data,
                             'timestamp': timestamp
                         })
             # print("buffer full")
@@ -187,7 +187,12 @@ class DeepfmDataset(torch.utils.data.Dataset):
         with self.buffer_lock:
             data = self.buffer.pop(0)
         get_item_g.set(time.time() - start)
-        return data
+        tensor_data = {
+            'input_data': data['input_data'].cuda(self.local_rank),
+            'labels': data['labels'].cuda(self.local_rank),
+            'timestamp': data['timestamp']
+        }
+        return tensor_data
 
 
 # 定义自定义数据加载器
