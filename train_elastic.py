@@ -327,8 +327,9 @@ def train():
             outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
-            loss_g.set(loss.item())
-            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
+            loss_value = loss.item()
+            loss_g.set(loss_value)
+            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
