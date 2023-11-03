@@ -319,7 +319,7 @@ def train():
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
             # print(f"[{os.getpid()}] Received input data: {input_data}")
-            # print(f"[{os.getpid()}] Received labels: {labels}")
+            print(f"[{os.getpid()}] Received labels: {labels}")
             timestamp = sample["timestamp"][0].item() / 1000
             lag = time.time() - timestamp
             lag_g.set(lag)
