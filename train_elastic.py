@@ -53,13 +53,13 @@ topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 1
+num_consumers = 2
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
-global_batch_size = 131072
+global_batch_size = 65536
 
 
 class DCAPDataset(torch.utils.data.Dataset):
@@ -355,7 +355,7 @@ def train():
                 step = 0
                 step_timer = time.time()
             # 保存模型
-            if i % 500 == 299:
+            if i % 500 == 49:
                 start = time.time()
                 print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
