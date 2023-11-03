@@ -313,8 +313,8 @@ def train():
             get_sample_g.set(get_sample_time)
 
             cuda_start = time.time()
-            input_data = sample["input_data"].to(local_rank)
-            labels = sample["labels"].to(local_rank)
+            input_data = sample["input_data"]
+            labels = sample["labels"]
             print("to cuda finish")
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
@@ -326,8 +326,8 @@ def train():
             # 前向传播+求梯度
             start = time.time()
             optimizer.zero_grad()
-            outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
-            loss = loss_fn(outputs, labels)
+            outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
+            loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
             # dist.barrier()
