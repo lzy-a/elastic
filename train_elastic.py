@@ -53,7 +53,7 @@ topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 2
+num_consumers = 4
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
@@ -130,7 +130,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=100000, num_consumers=1):
+    def __init__(self, buffer_size=200000, num_consumers=1):
         self.buffer_size = buffer_size
         self.buffer = queue.Queue()
         self.buffer_lock = threading.Lock()
