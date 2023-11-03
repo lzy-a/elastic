@@ -59,7 +59,7 @@ empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
-global_batch_size = 4096
+global_batch_size = 8192
 
 
 class DCAPDataset(torch.utils.data.Dataset):
