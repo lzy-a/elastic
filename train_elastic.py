@@ -350,6 +350,7 @@ def train():
             if step == 10:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
+                print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
                 print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
                 throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
                 step = 0
@@ -357,7 +358,6 @@ def train():
             # 保存模型
             if i % 500 == 49:
                 start = time.time()
-                print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             # 评测模型
