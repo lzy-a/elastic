@@ -130,7 +130,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=200000, num_consumers=1):
+    def __init__(self, buffer_size=300000, num_consumers=1):
         self.buffer_size = buffer_size
         self.buffer = queue.Queue()
         self.buffer_lock = threading.Lock()
