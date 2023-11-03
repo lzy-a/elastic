@@ -59,7 +59,7 @@ empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
-global_batch_size = 8192
+global_batch_size = 131072
 
 
 class DCAPDataset(torch.utils.data.Dataset):
@@ -130,7 +130,7 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=10000, num_consumers=1):
+    def __init__(self, buffer_size=100000, num_consumers=1):
         self.buffer_size = buffer_size
         self.buffer = queue.Queue()
         self.buffer_lock = threading.Lock()
