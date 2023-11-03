@@ -333,15 +333,8 @@ def train():
 
             # 同步梯度
             start = time.time()
-            # 创建一个CUDA事件来记录优化步骤的开始时间
-            start_event = torch.cuda.Event(enable_timing=True)
-            end_event = torch.cuda.Event(enable_timing=True)
-            start_event.record()
             optimizer.step()
-            end_event.record()
-            torch.cuda.synchronize()
-            elapsed_time = start_event.elapsed_time(end_event)
-            print(f"Optimizer step time: {elapsed_time:.4f} ms")
+            dist.barrier()
             sync_span_g.set(time.time() - start)
 
             # 每个step花费的时间
