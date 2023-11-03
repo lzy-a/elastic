@@ -330,14 +330,14 @@ def train():
             loss = loss_fn(outputs, labels)
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            dist.barrier()
-            print("loss finish")
+            # dist.barrier()
+            # print("loss finish")
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
             start = time.time()
             optimizer.step()
-            dist.barrier()
+            # dist.barrier()
             sync_span_g.set(time.time() - start)
 
             # 每个step花费的时间
