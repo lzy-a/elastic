@@ -315,7 +315,7 @@ def train():
             cuda_start = time.time()
             input_data = sample["input_data"].to(local_rank)
             labels = sample["labels"].to(local_rank)
-
+            print("to cuda finish")
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
             # print(f"[{os.getpid()}] Received input data: {input_data}")
