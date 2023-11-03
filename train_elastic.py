@@ -315,7 +315,7 @@ def train():
             cuda_start = time.time()
             input_data = sample["input_data"]
             labels = sample["labels"]
-            print("to cuda finish")
+            # print("to cuda finish")
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
             # print(f"[{os.getpid()}] Received input data: {input_data}")
@@ -330,15 +330,15 @@ def train():
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            # dist.barrier()
+            dist.barrier()
             # print("loss finish")
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
             start = time.time()
             optimizer.step()
-            print("optimizer finish")
-            # dist.barrier()
+            # print("optimizer finish")
+            dist.barrier()
             sync_span_g.set(time.time() - start)
 
             # 每个step花费的时间
@@ -402,7 +402,7 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     start = time.time()
-    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=200))
+    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=20))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
     train()
     dist.destroy_process_group()
