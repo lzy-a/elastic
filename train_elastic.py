@@ -329,6 +329,7 @@ def train():
             loss = loss_fn(outputs, labels)
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
+            dist.barrier()
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
