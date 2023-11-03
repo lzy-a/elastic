@@ -347,12 +347,14 @@ def train():
 
             # 测吞吐量
             step = step + 1
-            if step == 10:
+            if step == 1:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
                 print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
+                empty_cnt = 0
+                full_cnt = 0
                 print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
-                throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                throughput_g.set(int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
                 step = 0
                 step_timer = time.time()
             # 保存模型
