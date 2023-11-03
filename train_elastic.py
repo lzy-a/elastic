@@ -172,7 +172,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                             'timestamp': timestamp
                         })
             # print("buffer full")
-            time.sleep(0.005)
+            time.sleep(0.0001)
             full_cnt = full_cnt + 1
 
     def __len__(self):
