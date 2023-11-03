@@ -337,6 +337,7 @@ def train():
             # 同步梯度
             start = time.time()
             optimizer.step()
+            print("optimizer finish")
             # dist.barrier()
             sync_span_g.set(time.time() - start)
 
@@ -401,7 +402,7 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     start = time.time()
-    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=100))
+    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=200))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
     train()
     dist.destroy_process_group()
