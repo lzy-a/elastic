@@ -350,6 +350,7 @@ def train():
             if step == 1:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
+                global empty_cnt, full_cnt
                 print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
                 empty_cnt = 0
                 full_cnt = 0
