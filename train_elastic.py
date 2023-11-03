@@ -315,6 +315,7 @@ def train():
             cuda_start = time.time()
             input_data = sample["input_data"].to(local_rank)
             labels = sample["labels"].to(local_rank)
+
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
             # print(f"[{os.getpid()}] Received input data: {input_data}")
@@ -330,6 +331,7 @@ def train():
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
             dist.barrier()
+            print("loss finish")
             grad_span_g.set(time.time() - start)
 
             # 同步梯度
