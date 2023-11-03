@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Sampler
 from sklearn.metrics import log_loss, roc_auc_score
+import torch.autograd.profiler as profiler
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
@@ -303,63 +304,65 @@ def train():
     auc_timer = time.time()
     model.train().to(local_rank)
     step_start = time.time()
-    while True:
-        start = time.time()
-        for sample in dataloader:
-            # 获取数据
-            get_sample_time = time.time() - start
-            get_sample_g.set(get_sample_time)
-
-            cuda_start = time.time()
-            input_data = sample["input_data"].to(local_rank)
-            labels = sample["labels"].to(local_rank)
-            to_cuda_g.set(time.time() - cuda_start)
-            get_data_all_g.set(time.time() - start)
-            # print(f"[{os.getpid()}] Received input data: {input_data}")
-            # print(f"[{os.getpid()}] Received labels: {labels}")
-            timestamp = sample["timestamp"][0].item() / 1000
-            lag = time.time() - timestamp
-            lag_g.set(lag)
-            # 前向传播+求梯度
+    with profiler.profile(record_shapes=True) as prof:
+        while True:
             start = time.time()
-            optimizer.zero_grad()
-            outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
-            loss = loss_fn(outputs, labels)
-            loss.backward()
-            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            grad_span_g.set(time.time() - start)
+            for sample in dataloader:
+                # 获取数据
+                get_sample_time = time.time() - start
+                get_sample_g.set(get_sample_time)
 
-            # 同步梯度
-            start = time.time()
-            optimizer.step()
-            sync_span_g.set(time.time() - start)
-
-            # 每个step花费的时间
-            step_g.set(time.time() - step_start)
-            step_start = time.time()
-
-            # 测吞吐量
-            step = step + 1
-            if step == 10:
-                loss_value = loss.item()
-                loss_g.set(loss_value)
-                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
-                throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
-                step = 0
-                step_timer = time.time()
-            # 保存模型
-            if i % 500 == 99:
+                cuda_start = time.time()
+                input_data = sample["input_data"].to(local_rank)
+                labels = sample["labels"].to(local_rank)
+                to_cuda_g.set(time.time() - cuda_start)
+                get_data_all_g.set(time.time() - start)
+                # print(f"[{os.getpid()}] Received input data: {input_data}")
+                # print(f"[{os.getpid()}] Received labels: {labels}")
+                timestamp = sample["timestamp"][0].item() / 1000
+                lag = time.time() - timestamp
+                lag_g.set(lag)
+                # 前向传播+求梯度
                 start = time.time()
-                print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
-                save_checkpoint(i, ddp_model, optimizer, ckp_path)
-                save_g.set(time.time() - start)
-            # 评测模型
-            if time.time() - auc_timer > 180:
-                auc = get_auc(dataloader, ddp_model)
-                auc_g.set(auc)
-                auc_timer = time.time()
-            i += 1
-            start = time.time()
+                optimizer.zero_grad()
+                outputs = ddp_model(input_data)  # 输入数据要进行维度扩展
+                loss = loss_fn(outputs, labels)
+                loss.backward()
+                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
+                grad_span_g.set(time.time() - start)
+
+                # 同步梯度
+                start = time.time()
+                optimizer.step()
+                sync_span_g.set(time.time() - start)
+
+                # 每个step花费的时间
+                step_g.set(time.time() - step_start)
+                step_start = time.time()
+
+                # 测吞吐量
+                step = step + 1
+                if step == 10:
+                    loss_value = loss.item()
+                    loss_g.set(loss_value)
+                    print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
+                    throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                    step = 0
+                    step_timer = time.time()
+                # 保存模型
+                if i % 500 == 299:
+                    prof.export_chrome_trace("trace.json")
+                    start = time.time()
+                    print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
+                    save_checkpoint(i, ddp_model, optimizer, ckp_path)
+                    save_g.set(time.time() - start)
+                # 评测模型
+                if time.time() - auc_timer > 180:
+                    auc = get_auc(dataloader, ddp_model)
+                    auc_g.set(auc)
+                    auc_timer = time.time()
+                i += 1
+                start = time.time()
 
 
 # 先初始化好kafka再dist init
