@@ -351,6 +351,7 @@ def train():
                     step_timer = time.time()
                 # 保存模型
                 if i % 500 == 299:
+                    prof.__exit__(None, None, None)
                     prof.export_chrome_trace("trace.json")
                     start = time.time()
                     print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
