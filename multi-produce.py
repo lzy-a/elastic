@@ -3,7 +3,7 @@ import subprocess
 
 
 def run_produce_script():
-    subprocess.run(['python', 'produce-criteo.py'])
+    subprocess.run(['python', 'producer-criteo.py'])
 
 
 if __name__ == "__main__":
