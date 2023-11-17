@@ -17,8 +17,9 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Sampler
 from sklearn.metrics import log_loss, roc_auc_score
+import torch.autograd.profiler as profiler
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from kafka import KafkaConsumer
@@ -26,9 +27,14 @@ from kafka import KafkaAdminClient
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
 import signal
+import threading
+import threading
+import queue
+from multiprocessing import Process, Queue
 
 from deepfm import deepfm
 
+step_g = Gauge('step', 'step')
 auc_g = Gauge('auc', 'auc')
 throughput_g = Gauge('throughput', 'samples per sec')
 lag_g = Gauge('lag', 'kafka lag')
@@ -36,19 +42,24 @@ loss_g = Gauge('loss', 'loss')
 save_g = Gauge('save', 'save cost time')
 get_item_g = Gauge('get_item', 'read a sample cost time')
 get_sample_g = Gauge('get_sample', 'read samples cost time')
+to_cuda_g = Gauge('to_cuda', 'move to cost time')
+get_data_all_g = Gauge('get_data_all_time', 'get data cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
 sync_span_g = Gauge('sync', 'sync cost time')
 lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
-topic = 'stream-6'
+topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
-consumer.subscribe([topic])
+num_consumers = 4
+full_cnt = 0
+empty_cnt = 0
+# consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
+# consumer.subscribe([topic])
 
-global_batch_size = 1024
+global_batch_size = 65536
 
 
 class DCAPDataset(torch.utils.data.Dataset):
@@ -77,43 +88,109 @@ class DCAPDataset(torch.utils.data.Dataset):
         }
 
 
+# class DeepfmDataset(torch.utils.data.Dataset):
+#     def __init__(self, buffer_size=5000, num_consumers=4):
+#         self.buffer_size = buffer_size
+#         self.buffer = []
+#         self.local_rank = int(os.environ["LOCAL_RANK"])
+#         self.num_consumers = num_consumers
+#         self.consumer = consumer
+#         self.refill_buffer()
+#
+#
+#
+#     def refill_buffer(self):
+#         start = time.time()
+#         while True:
+#             while len(self.buffer) < self.buffer_size:
+#                 message = next(self.consumer)
+#                 message_dict = json.loads(message.value.decode('utf-8'))
+#
+#                 # 现在你可以通过键来访问train和label数据
+#                 train_data = message_dict['train']
+#                 label_data = message_dict['label']
+#
+#                 train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
+#                 label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
+#
+#                 timestamp = message.timestamp
+#                 get_item_g.set(time.time() - start)
+#
+#                 self.buffer.append({
+#                     'input_data': train_tensor,
+#                     'labels': label_tensor,
+#                     'timestamp': timestamp
+#                 })
+#
+#     def __len__(self):
+#         return 10 ** 5
+#
+#     def __getitem__(self, idx):
+#         if len(self.buffer) == 0:
+#             self.refill_buffer()
+#         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=5000):
+    def __init__(self, buffer_size=300000, num_consumers=1):
         self.buffer_size = buffer_size
-        self.buffer = []
+        self.buffer = queue.Queue()
+        self.buffer_lock = threading.Lock()
         self.local_rank = int(os.environ["LOCAL_RANK"])
-        self.consumer = consumer
-        self.refill_buffer()
+        self.num_consumers = num_consumers
+        self.consumer_queues = [queue.Queue() for _ in range(num_consumers)]
 
-    def refill_buffer(self):
-        start = time.time()
-        while len(self.buffer) < self.buffer_size:
-            message = next(self.consumer)
-            message_dict = json.loads(message.value.decode('utf-8'))
+        # Start Kafka consumers in separate threads
+        self.consumer_threads = []
+        for i in range(num_consumers):
+            thread = threading.Thread(target=self.kafka_consumer, args=(i, topic))
+            thread.start()
+            self.consumer_threads.append(thread)
 
-            # 现在你可以通过键来访问train和label数据
-            train_data = message_dict['train']
-            label_data = message_dict['label']
-
-            train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-            label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
-
-            timestamp = message.timestamp
-            get_item_g.set(time.time() - start)
-
-            self.buffer.append({
-                'input_data': train_tensor,
-                'labels': label_tensor,
-                'timestamp': timestamp
-            })
+    def kafka_consumer(self, consumer_id, topic):
+        consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
+                                 )
+        consumer.subscribe([topic])  # 订阅主题
+        # 分配分区并加入消费者组
+        kafka_setup(consumer)
+        global full_cnt
+        full_cnt = 1
+        while True:
+            while self.buffer.qsize() < self.buffer_size:
+                start = time.time()
+                message = next(consumer)
+                if message is not None:
+                    message_dict = json.loads(message.value.decode('utf-8'))
+                    train_data = message_dict['train']
+                    label_data = message_dict['label']
+                    train_data = torch.tensor(list(train_data.values())).float()
+                    label_data = torch.tensor(list(label_data.values())).float()
+                    timestamp = message.timestamp
+                    get_item_g.set(time.time() - start)
+                    with self.buffer_lock:
+                        self.buffer.put({
+                            'input_data': train_data,
+                            'labels': label_data,
+                            'timestamp': timestamp
+                        })
+            # print("buffer full")
+            time.sleep(0.0001)
+            full_cnt = full_cnt + 1
 
     def __len__(self):
         return 10 ** 5
 
     def __getitem__(self, idx):
-        if len(self.buffer) == 0:
-            self.refill_buffer()
-        return self.buffer.pop(0)
+        start = time.time()
+        while self.buffer.qsize() == 0:
+            # 等待一段时间，然后重试
+            # print("sleep 0.01 for buffer refill")
+            global empty_cnt
+            empty_cnt = empty_cnt + 1
+            time.sleep(0.0005)  # 0.0005秒的等待时间，你可以根据需要调整
+
+        with self.buffer_lock:
+            data = self.buffer.get()
+        get_item_g.set(time.time() - start)
+        return data
 
 
 # 定义自定义数据加载器
@@ -135,17 +212,6 @@ class KafkaDataset(torch.utils.data.Dataset):
             'labels': labels,
             'timestamp': timestamp
         }
-
-
-class ToyModel(nn.Module):
-    def __init__(self):
-        super(ToyModel, self).__init__()
-        self.net1 = nn.Linear(10, 10)
-        self.relu = nn.ReLU()
-        self.net2 = nn.Linear(10, 5)
-
-    def forward(self, x):
-        return self.net2(self.relu(self.net1(x)))
 
 
 def save_checkpoint(epoch, model, optimizer, path):
@@ -171,6 +237,7 @@ def load_checkpoint(path):
 
 
 def get_auc(loader, model):
+    start = time.time()
     pred, target = [], []
     model.eval()
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -184,6 +251,7 @@ def get_auc(loader, model):
             target += list(y.cpu().numpy())  # 将y移动到CPU上
     auc = roc_auc_score(target, pred)
     auc_g.set(auc)
+    print(f"get auc cost {time.time() - start}")
     return auc
 
 
@@ -226,69 +294,89 @@ def train():
 
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DeepfmDataset()
-    dataloader = DataLoader(dataset, batch_size=global_batch_size)
+    dataset = DeepfmDataset(num_consumers=num_consumers)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True)
 
     global i
     i = 0
     step = 0
     step_timer = time.time()
-    auc_timer = time.time() - 70
+    auc_timer = time.time()
     model.train().to(local_rank)
+    step_start = time.time()
+
     while True:
         start = time.time()
         for sample in dataloader:
-            input_data = sample["input_data"]
-            labels = sample["labels"]
+            # 获取数据
             get_sample_time = time.time() - start
             get_sample_g.set(get_sample_time)
-            timestamp = sample["timestamp"][0].item() / 1000
-            print(f"[{os.getpid()}] Received input data: {input_data}")
+
+            cuda_start = time.time()
+            input_data = sample["input_data"]
+            labels = sample["labels"]
+            # print("to cuda finish")
+            to_cuda_g.set(time.time() - cuda_start)
+            get_data_all_g.set(time.time() - start)
+            # print(f"[{os.getpid()}] Received input data: {input_data}")
             print(f"[{os.getpid()}] Received labels: {labels}")
+            timestamp = sample["timestamp"][0].item() / 1000
             lag = time.time() - timestamp
             lag_g.set(lag)
+            # 前向传播+求梯度
             start = time.time()
             optimizer.zero_grad()
             outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
+            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
+            dist.barrier()
+            # print("loss finish")
             grad_span_g.set(time.time() - start)
-            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss.item()}\n")
-            step = step + 1
-            if step == 10:
-                throughput_g.set(10 * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
-                step = 0
-                step_timer = time.time()
-            loss_g.set(loss.item())
+
+            # 同步梯度
             start = time.time()
             optimizer.step()
+            # print("optimizer finish")
+            dist.barrier()
             sync_span_g.set(time.time() - start)
-            if i % 500 == 99:
+
+            # 每个step花费的时间
+            step_g.set(time.time() - step_start)
+            step_start = time.time()
+
+            global empty_cnt, full_cnt
+            print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
+            empty_cnt = 0
+            full_cnt = 0
+            # 测吞吐量
+            step = step + 1
+            if step == 5:
+                loss_value = loss.item()
+                loss_g.set(loss_value)
+                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
+                throughput_g.set(step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                step = 0
+                step_timer = time.time()
+            # 保存模型
+            if i % 500 == 49:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
-            start = time.time()
-            if time.time() - auc_timer > 90:
+            # 评测模型
+            if time.time() - auc_timer > 180:
                 auc = get_auc(dataloader, ddp_model)
                 auc_g.set(auc)
                 auc_timer = time.time()
             i += 1
-
-
-# 不要在Kafka消费者组初始化完成之前进入训练过程
-def kafka_warmup():
-    # 订阅主题并加入消费者组
-    start = time.time()
-    while time.time() - start < 10:
-        time.sleep(1)
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
+            start = time.time()
 
 
 # 先初始化好kafka再dist init
-def kafka_setup():
+def kafka_setup(consumer):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
-    while member_count < int(ws):
+    while member_count < int(ws) * num_consumers:
         group_description = client.describe_consumer_groups([group])
         print(group_description)
         for group_des in group_description:
@@ -297,8 +385,8 @@ def kafka_setup():
             else:
                 member_count = len(group_des.members)
                 break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws}")
-        msg = consumer.poll(timeout_ms=1000, max_records=1)
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_consumers}")
+        consumer.poll(1)
         time.sleep(0.1)
 
 
@@ -307,7 +395,8 @@ def run():
     # signal.signal(signal.SIGTERM, signal_handler)
     if int(os.environ["RANK"]) == 0:
         start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
-    kafka_setup()
+
+    # kafka_setup()
     os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
     os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"
     env_dict = {
@@ -316,9 +405,8 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     start = time.time()
-    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=15))
+    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=20))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
-    # kafka_warmup()
     train()
     dist.destroy_process_group()
 
