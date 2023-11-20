@@ -405,7 +405,7 @@ def run():
     }
     print(f"[{os.getpid()}] Initializing process group with: {env_dict}")
     start = time.time()
-    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=20))
+    dist.init_process_group(backend="nccl", timeout=timedelta(seconds=60))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
     train()
     dist.destroy_process_group()
