@@ -130,20 +130,9 @@ class DCAPDataset(torch.utils.data.Dataset):
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer_size=300000, num_consumers=1):
-        self.buffer_size = buffer_size
-        self.buffer = queue.Queue()
-        self.buffer_lock = threading.Lock()
+    def __init__(self, buffer=None):
+        self.buffer = buffer
         self.local_rank = int(os.environ["LOCAL_RANK"])
-        self.num_consumers = num_consumers
-        self.consumer_queues = [queue.Queue() for _ in range(num_consumers)]
-
-        # Start Kafka consumers in separate threads
-        self.consumer_threads = []
-        for i in range(num_consumers):
-            thread = threading.Thread(target=self.kafka_consumer, args=(i, topic))
-            thread.start()
-            self.consumer_threads.append(thread)
 
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
@@ -187,8 +176,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             empty_cnt = empty_cnt + 1
             time.sleep(0.0005)  # 0.0005秒的等待时间，你可以根据需要调整
 
-        with self.buffer_lock:
-            data = self.buffer.get()
+        data = self.buffer.get()
         get_item_g.set(time.time() - start)
         return data
 
@@ -256,6 +244,8 @@ def get_auc(loader, model):
 
 
 def train():
+    shared_queue = multiprocessing.Queue()
+    buffer_setup(num_consumers, shared_queue, 300000)
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
@@ -295,7 +285,7 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(num_consumers=num_consumers)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=1)
 
     global i
     i = 0
@@ -330,7 +320,7 @@ def train():
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            #dist.barrier()
+            # dist.barrier()
             # print("loss finish")
             grad_span_g.set(time.time() - start)
 
@@ -338,7 +328,7 @@ def train():
             start = time.time()
             optimizer.step()
             # print("optimizer finish")
-            #dist.barrier()
+            # dist.barrier()
             sync_span_g.set(time.time() - start)
 
             # 每个step花费的时间
@@ -388,6 +378,43 @@ def kafka_setup(consumer):
         print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_consumers}")
         consumer.poll(1)
         time.sleep(0.1)
+
+
+def buffer_setup(num_consumer, queue, buffer_size):
+    for i in range(num_consumers):
+        thread = threading.Thread(target=kafka_consumer, args=(topic, queue, buffer_size))
+        thread.start()
+
+
+def kafka_consumer(topic, queue, buffer_size):
+    consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
+                             )
+    consumer.subscribe([topic])  # 订阅主题
+    # 分配分区并加入消费者组
+    kafka_setup(consumer)
+    global full_cnt
+    full_cnt = 1
+    while True:
+        while queue.qsize() < buffer_size:
+            start = time.time()
+            message = next(consumer)
+            if message is not None:
+                message_dict = json.loads(message.value.decode('utf-8'))
+                train_data = message_dict['train']
+                label_data = message_dict['label']
+                train_data = torch.tensor(list(train_data.values())).float()
+                label_data = torch.tensor(list(label_data.values())).float()
+                timestamp = message.timestamp
+                get_item_g.set(time.time() - start)
+
+                queue.put({
+                    'input_data': train_data,
+                    'labels': label_data,
+                    'timestamp': timestamp
+                })
+        # print("buffer full")
+        time.sleep(0.0001)
+        full_cnt = full_cnt + 1
 
 
 def run():
