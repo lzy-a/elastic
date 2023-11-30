@@ -67,9 +67,10 @@ get_item_g = Gauge('get_item', 'read a sample cost time')
 get_sample_g = Gauge('get_sample', 'read samples cost time')
 to_cuda_g = Gauge('to_cuda', 'move to cost time')
 get_data_all_g = Gauge('get_data_all_time', 'get data cost time')
-grad_span_g = Gauge('grad', 'grad cost time')
-sync_span_g = Gauge('sync', 'sync cost time')
-lag_g.set(0)
+forward_loss_g = Gauge('forward_loss', 'forward_loss time')
+loss_backward_g = Gauge('loss_backward', 'sync cost time')
+optim_g = Gauge('optim','optim')
+
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream16'
@@ -80,36 +81,9 @@ num_consumers = 4
 num_workers = 1
 full_cnt = 0
 empty_cnt = 0
-# consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
-# consumer.subscribe([topic])
 
 global_batch_size = 65536
 
-
-class DCAPDataset(torch.utils.data.Dataset):
-    def __len__(self):
-        return 10 ** 8
-
-    def __getitem__(self, idx):
-        start = time.time()
-        local_rank = int(os.environ["LOCAL_RANK"])
-        message = next(consumer)
-        message_dict = json.loads(message.value.decode('utf-8'))
-
-        # 现在你可以通过键来访问train和label数据
-        train_data = message_dict['train']
-        label_data = message_dict['label']
-
-        train_tensor = torch.tensor(list(train_data.values())).float().cuda(local_rank)
-        label_tensor = torch.tensor(list(label_data.values())).float().cuda(local_rank)
-
-        timestamp = message.timestamp
-        get_item_g.set(time.time() - start)
-        return {
-            'input_data': train_tensor,
-            'labels': label_tensor,
-            'timestamp': timestamp
-        }
 
 
 # class DeepfmDataset(torch.utils.data.Dataset):
@@ -159,39 +133,11 @@ class DeepfmDataset(torch.utils.data.Dataset):
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.consumer = None
 
-    # def kafka_consumer(self, consumer_id, topic):
-    #     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
-    #                              )
-    #     consumer.subscribe([topic])  # 订阅主题
-    #     # 分配分区并加入消费者组
-    #     kafka_setup(consumer)
-    #     global full_cnt
-    #     full_cnt = 1
-    #     while True:
-    #         while self.buffer.qsize() < self.buffer_size:
-    #             start = time.time()
-    #             message = next(consumer)
-    #             if message is not None:
-    #                 message_dict = json.loads(message.value.decode('utf-8'))
-    #                 train_data = message_dict['train']
-    #                 label_data = message_dict['label']
-    #                 train_data = torch.tensor(list(train_data.values())).float()
-    #                 label_data = torch.tensor(list(label_data.values())).float()
-    #                 timestamp = message.timestamp
-    #                 get_item_g.set(time.time() - start)
-    #                 with self.buffer_lock:
-    #                     self.buffer.put({
-    #                         'input_data': train_data,
-    #                         'labels': label_data,
-    #                         'timestamp': timestamp
-    #                     })
-    #         # print("buffer full")
-    #         time.sleep(0.0001)
-    #         full_cnt = full_cnt + 1
+
     def initialize_consumer(self):
         # Your code to initialize the Kafka consumer
         return KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
-                             auto_offset_reset='latest')
+                             auto_offset_reset='latest',max_poll_records=5000)
 
     def __len__(self):
         return 10 ** 5
@@ -216,26 +162,6 @@ class DeepfmDataset(torch.utils.data.Dataset):
                 break
         return data
 
-
-# 定义自定义数据加载器
-class KafkaDataset(torch.utils.data.Dataset):
-    def __len__(self):
-        return 10 ** 8
-
-    def __getitem__(self, idx):
-        start = time.time()
-        local_rank = int(os.environ["LOCAL_RANK"])
-        message = next(consumer)
-        data = message.value.decode('utf-8').split(',')
-        input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
-        labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
-        timestamp = message.timestamp
-        get_item_g.set(time.time() - start)
-        return {
-            'input_data': input_data,
-            'labels': labels,
-            'timestamp': timestamp
-        }
 
 
 def worker_init_fn(worker_id, dataset):
@@ -360,18 +286,20 @@ def train():
             optimizer.zero_grad()
             outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels.to(local_rank))
+            forward_loss_g.set(time.time() - start)
+            start = time.time()
             loss.backward()
+            loss_backward_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
             # dist.barrier()
             # print("loss finish")
-            grad_span_g.set(time.time() - start)
 
             # 同步梯度
             start = time.time()
             optimizer.step()
             # print("optimizer finish")
             # dist.barrier()
-            sync_span_g.set(time.time() - start)
+            optim.set(time.time() - start)
 
             # 每个step花费的时间
             step_g.set(time.time() - step_start)
@@ -421,42 +349,6 @@ def kafka_setup(consumer):
         consumer.poll(1)
         time.sleep(0.1)
 
-
-def buffer_setup(num_consumer, queue, buffer_size):
-    for i in range(num_consumers):
-        thread = threading.Thread(target=kafka_consumer, args=(topic, queue, buffer_size))
-        thread.start()
-
-
-def kafka_consumer(topic, queue, buffer_size):
-    consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
-                             )
-    consumer.subscribe([topic])  # 订阅主题
-    # 分配分区并加入消费者组
-    kafka_setup(consumer)
-    global full_cnt
-    full_cnt = 1
-    while True:
-        while queue.qsize() < buffer_size:
-            start = time.time()
-            message = next(consumer)
-            if message is not None:
-                message_dict = json.loads(message.value.decode('utf-8'))
-                train_data = message_dict['train']
-                label_data = message_dict['label']
-                train_data = torch.tensor(list(train_data.values())).float()
-                label_data = torch.tensor(list(label_data.values())).float()
-                timestamp = message.timestamp
-                get_item_g.set(time.time() - start)
-
-                queue.put({
-                    'input_data': train_data,
-                    'labels': label_data,
-                    'timestamp': timestamp
-                })
-        # print("buffer full")
-        time.sleep(0.0001)
-        full_cnt = full_cnt + 1
 
 
 def run():
