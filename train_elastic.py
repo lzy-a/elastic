@@ -251,7 +251,7 @@ def train():
     #                                                           rank=rank)
     dataset = DeepfmDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers,
-                            worker_init_fn=lambda worker_id: worker_init_fn(worker_id, dataset))
+                            worker_init_fn=dataset.worker_init_fn)
 
     global i
     i = 0
