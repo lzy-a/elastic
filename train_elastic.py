@@ -69,7 +69,7 @@ to_cuda_g = Gauge('to_cuda', 'move to cost time')
 get_data_all_g = Gauge('get_data_all_time', 'get data cost time')
 forward_loss_g = Gauge('forward_loss', 'forward_loss time')
 loss_backward_g = Gauge('loss_backward', 'sync cost time')
-optim_g = Gauge('optim','optim')
+optim_g = Gauge('optim', 'optim')
 
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
@@ -83,7 +83,6 @@ full_cnt = 0
 empty_cnt = 0
 
 global_batch_size = 65536
-
 
 
 # class DeepfmDataset(torch.utils.data.Dataset):
@@ -133,11 +132,16 @@ class DeepfmDataset(torch.utils.data.Dataset):
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.consumer = None
 
-
     def initialize_consumer(self):
         # Your code to initialize the Kafka consumer
         return KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
-                             auto_offset_reset='latest',max_poll_records=5000)
+                             auto_offset_reset='latest', max_poll_records=5000)
+
+    def worker_init_fn(self,worker_id):
+        # This will be called for each worker process
+        self.consumer = self.initialize_consumer()
+        kafka_setup(self.consumer)
+        print("worker_init_fn")
 
     def __len__(self):
         return 10 ** 5
@@ -161,14 +165,6 @@ class DeepfmDataset(torch.utils.data.Dataset):
                 }
                 break
         return data
-
-
-
-def worker_init_fn(worker_id, dataset):
-    # This will be called for each worker process
-    dataset.consumer = dataset.initialize_consumer()
-    # kafka_setup(dataset.consumer)
-    print("worker_init_fn")
 
 
 def save_checkpoint(epoch, model, optimizer, path):
@@ -347,10 +343,9 @@ def kafka_setup(consumer):
             else:
                 member_count = len(group_des.members)
                 break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_consumers}")
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_workers}")
         consumer.poll(1)
         time.sleep(0.1)
-
 
 
 def run():
