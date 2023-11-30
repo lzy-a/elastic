@@ -190,6 +190,10 @@ class DeepfmDataset(torch.utils.data.Dataset):
     #         # print("buffer full")
     #         time.sleep(0.0001)
     #         full_cnt = full_cnt + 1
+    def initialize_consumer(self):
+        # Your code to initialize the Kafka consumer
+        return KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
+                             auto_offset_reset='latest')
 
     def __len__(self):
         return 10 ** 5
@@ -235,6 +239,9 @@ class KafkaDataset(torch.utils.data.Dataset):
             'timestamp': timestamp
         }
 
+def worker_init_fn(worker_id):
+    # This will be called for each worker process
+    dataset.initialize_consumer()
 
 def save_checkpoint(epoch, model, optimizer, path):
     # 创建一个临时文件路径
@@ -318,8 +325,9 @@ def train():
 
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DeepfmDataset(buffer=shared_queue)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers)
+    dataset = DeepfmDataset()
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers,
+                            worker_init_fn=worker_init_fn)
 
     global i
     i = 0
