@@ -167,6 +167,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
 def worker_init_fn(worker_id, dataset):
     # This will be called for each worker process
     dataset.consumer = dataset.initialize_consumer()
+    kafka_setup(dataset.consumer)
 
 
 def save_checkpoint(epoch, model, optimizer, path):
@@ -336,7 +337,7 @@ def train():
 def kafka_setup(consumer):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
-    while member_count < int(ws) * num_consumers:
+    while member_count < int(ws) * num_workers:
         group_description = client.describe_consumer_groups([group])
         print(group_description)
         for group_des in group_description:
