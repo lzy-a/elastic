@@ -167,7 +167,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
 def worker_init_fn(worker_id, dataset):
     # This will be called for each worker process
     dataset.consumer = dataset.initialize_consumer()
-    kafka_setup(dataset.consumer)
+    # kafka_setup(dataset.consumer)
+    print("worker_init_fn")
 
 
 def save_checkpoint(epoch, model, optimizer, path):
