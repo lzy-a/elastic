@@ -161,45 +161,41 @@ class DeepfmDataset(torch.utils.data.Dataset):
                                       auto_offset_reset='latest',
                                       )
 
-    def kafka_consumer(self, consumer_id, topic):
-        consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
-                                 )
-        consumer.subscribe([topic])  # 订阅主题
-        # 分配分区并加入消费者组
-        kafka_setup(consumer)
-        global full_cnt
-        full_cnt = 1
-        while True:
-            while self.buffer.qsize() < self.buffer_size:
-                start = time.time()
-                message = next(consumer)
-                if message is not None:
-                    message_dict = json.loads(message.value.decode('utf-8'))
-                    train_data = message_dict['train']
-                    label_data = message_dict['label']
-                    train_data = torch.tensor(list(train_data.values())).float()
-                    label_data = torch.tensor(list(label_data.values())).float()
-                    timestamp = message.timestamp
-                    get_item_g.set(time.time() - start)
-                    with self.buffer_lock:
-                        self.buffer.put({
-                            'input_data': train_data,
-                            'labels': label_data,
-                            'timestamp': timestamp
-                        })
-            # print("buffer full")
-            time.sleep(0.0001)
-            full_cnt = full_cnt + 1
+    # def kafka_consumer(self, consumer_id, topic):
+    #     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
+    #                              )
+    #     consumer.subscribe([topic])  # 订阅主题
+    #     # 分配分区并加入消费者组
+    #     kafka_setup(consumer)
+    #     global full_cnt
+    #     full_cnt = 1
+    #     while True:
+    #         while self.buffer.qsize() < self.buffer_size:
+    #             start = time.time()
+    #             message = next(consumer)
+    #             if message is not None:
+    #                 message_dict = json.loads(message.value.decode('utf-8'))
+    #                 train_data = message_dict['train']
+    #                 label_data = message_dict['label']
+    #                 train_data = torch.tensor(list(train_data.values())).float()
+    #                 label_data = torch.tensor(list(label_data.values())).float()
+    #                 timestamp = message.timestamp
+    #                 get_item_g.set(time.time() - start)
+    #                 with self.buffer_lock:
+    #                     self.buffer.put({
+    #                         'input_data': train_data,
+    #                         'labels': label_data,
+    #                         'timestamp': timestamp
+    #                     })
+    #         # print("buffer full")
+    #         time.sleep(0.0001)
+    #         full_cnt = full_cnt + 1
 
     def __len__(self):
         return 10 ** 5
 
     def __getitem__(self, idx):
         start = time.time()
-        if self.consumer is None:
-            self.consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
-                                          auto_offset_reset='latest',
-                                          )
         while True:
             message = next(self.consumer)
             if message is not None:
