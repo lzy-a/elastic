@@ -34,7 +34,6 @@ from multiprocessing import Process, Queue
 
 from deepfm import deepfm
 
-User
 import torch.multiprocessing as mp
 from torch.multiprocessing import reductions
 from multiprocessing.reduction import ForkingPickler
@@ -158,6 +157,9 @@ class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer=None):
         self.buffer = buffer
         self.local_rank = int(os.environ["LOCAL_RANK"])
+        self.consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
+                                      auto_offset_reset='latest',
+                                      )
 
     def kafka_consumer(self, consumer_id, topic):
         consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
@@ -194,15 +196,22 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         start = time.time()
-        while self.buffer.qsize() == 0:
-            # 等待一段时间，然后重试
-            # print("sleep 0.01 for buffer refill")
-            global empty_cnt
-            empty_cnt = empty_cnt + 1
-            time.sleep(0.0005)  # 0.0005秒的等待时间，你可以根据需要调整
-
-        data = self.buffer.get()
-        get_item_g.set(time.time() - start)
+        while True:
+            message = next(self.consumer)
+            if message is not None:
+                message_dict = json.loads(message.value.decode('utf-8'))
+                train_data = message_dict['train']
+                label_data = message_dict['label']
+                train_data = torch.tensor(list(train_data.values())).float()
+                label_data = torch.tensor(list(label_data.values())).float()
+                timestamp = message.timestamp
+                get_item_g.set(time.time() - start)
+                data = {
+                    'input_data': train_data,
+                    'labels': label_data,
+                    'timestamp': timestamp
+                }
+                break
         return data
 
 
