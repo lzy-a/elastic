@@ -157,9 +157,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer=None):
         self.buffer = buffer
         self.local_rank = int(os.environ["LOCAL_RANK"])
-        self.consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
-                                      auto_offset_reset='latest',
-                                      )
+        self.consumer = None
 
     # def kafka_consumer(self, consumer_id, topic):
     #     consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest',
@@ -239,9 +237,11 @@ class KafkaDataset(torch.utils.data.Dataset):
             'timestamp': timestamp
         }
 
-def worker_init_fn(worker_id):
+
+def worker_init_fn(worker_id, dataset):
     # This will be called for each worker process
-    dataset.initialize_consumer()
+    dataset.consumer = dataset.initialize_consumer()
+
 
 def save_checkpoint(epoch, model, optimizer, path):
     # 创建一个临时文件路径
@@ -327,7 +327,7 @@ def train():
     #                                                           rank=rank)
     dataset = DeepfmDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers,
-                            worker_init_fn=worker_init_fn)
+                            worker_init_fn=lambda worker_id: worker_init_fn(worker_id, dataset))
 
     global i
     i = 0
