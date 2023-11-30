@@ -34,6 +34,30 @@ from multiprocessing import Process, Queue
 
 from deepfm import deepfm
 
+User
+import torch.multiprocessing as mp
+from torch.multiprocessing import reductions
+from multiprocessing.reduction import ForkingPickler
+from torch.utils.data import dataloader
+
+default_collate_func = dataloader.default_collate
+
+
+def default_collate_override(batch):
+    dataloader._use_shared_memory = False
+    return default_collate_func(batch)
+
+
+setattr(dataloader, 'default_collate', default_collate_override)
+
+for t in torch._storage_classes:
+    if sys.version_info[0] == 2:
+        if t in ForkingPickler.dispatch:
+            del ForkingPickler.dispatch[t]
+    else:
+        if t in ForkingPickler._extra_reducers:
+            del ForkingPickler._extra_reducers[t]
+
 step_g = Gauge('step', 'step')
 auc_g = Gauge('auc', 'auc')
 throughput_g = Gauge('throughput', 'samples per sec')
@@ -54,6 +78,7 @@ group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 num_consumers = 4
+num_workers = 16
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
@@ -285,7 +310,7 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(buffer=shared_queue)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=1)
+    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers)
 
     global i
     i = 0
