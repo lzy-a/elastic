@@ -196,6 +196,10 @@ class DeepfmDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         start = time.time()
+        if self.consumer is None:
+            self.consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
+                                          auto_offset_reset='latest',
+                                          )
         while True:
             message = next(self.consumer)
             if message is not None:
@@ -279,7 +283,7 @@ def get_auc(loader, model):
 
 def train():
     shared_queue = multiprocessing.Queue()
-    buffer_setup(num_consumers, shared_queue, 300000)
+    # buffer_setup(num_consumers, shared_queue, 300000)
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
