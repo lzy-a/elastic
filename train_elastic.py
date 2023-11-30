@@ -299,7 +299,7 @@ def train():
             optimizer.step()
             # print("optimizer finish")
             # dist.barrier()
-            optim.set(time.time() - start)
+            optim_g.set(time.time() - start)
 
             # 每个step花费的时间
             step_g.set(time.time() - step_start)
