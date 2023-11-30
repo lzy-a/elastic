@@ -77,7 +77,7 @@ group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 num_consumers = 4
-num_workers = 16
+num_workers = 1
 full_cnt = 0
 empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
