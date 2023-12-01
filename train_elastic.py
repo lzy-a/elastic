@@ -142,6 +142,8 @@ class DeepfmDataset(torch.utils.data.Dataset):
         # This will be called for each worker process
         self.consumer = self.initialize_consumer()
         # kafka_setup(self.consumer)
+        kafka_thread = threading.Thread(target=self.read_kafka_data)
+        kafka_thread.start()
         print(f"[{os.getpid()}] worker_init_fn")
 
     def read_kafka_data(self):
