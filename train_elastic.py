@@ -78,7 +78,7 @@ group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
 # num_consumers = 4
-num_workers = 1
+num_workers = 4
 full_cnt = 0
 empty_cnt = 0
 
@@ -137,11 +137,11 @@ class DeepfmDataset(torch.utils.data.Dataset):
         return KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group,
                              auto_offset_reset='latest', max_poll_records=5000)
 
-    def worker_init_fn(self,worker_id):
+    def worker_init_fn(self, worker_id):
         # This will be called for each worker process
         self.consumer = self.initialize_consumer()
         kafka_setup(self.consumer)
-        print("worker_init_fn")
+        print(f"[{os.getpid()}] worker_init_fn")
 
     def __len__(self):
         return 10 ** 5
@@ -334,6 +334,7 @@ def train():
 def kafka_setup(consumer):
     ws = os.environ["WORLD_SIZE"]
     member_count = 0
+    total = ws * num_workers
     while member_count < int(ws) * num_workers:
         group_description = client.describe_consumer_groups([group])
         print(group_description)
@@ -343,7 +344,7 @@ def kafka_setup(consumer):
             else:
                 member_count = len(group_des.members)
                 break
-        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {ws * num_workers}")
+        print(f"[{os.getpid()}] consumer cnt {member_count} ws {ws} total {total}")
         consumer.poll(1)
         time.sleep(0.1)
 
