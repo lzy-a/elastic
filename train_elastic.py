@@ -77,7 +77,7 @@ topic = 'stream16'
 group = '1'
 client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 # 创建 Kafka 消费者
-num_consumers = 4
+# num_consumers = 4
 num_workers = 1
 full_cnt = 0
 empty_cnt = 0
@@ -128,7 +128,7 @@ global_batch_size = 65536
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer=None):
-        self.buffer = buffer
+        self.buffer = queue.Queue(maxsize=300000)
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.consumer = None
 
@@ -251,7 +251,7 @@ def train():
     #                                                           rank=rank)
     dataset = DeepfmDataset()
     dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True, num_workers=num_workers,
-                            worker_init_fn=dataset.worker_init_fn)
+                            worker_init_fn=dataset.worker_init_fn, persistent_workers=True)
 
     global i
     i = 0
