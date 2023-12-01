@@ -328,6 +328,7 @@ def train():
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
+                print(f" save model cost {time.time() - start}s")
             # 评测模型
             if time.time() - auc_timer > 180:
                 auc = get_auc(dataloader, ddp_model)
