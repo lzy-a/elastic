@@ -127,8 +127,9 @@ global_batch_size = 65536
 #             self.refill_buffer()
 #         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
-    def __init__(self, buffer=None):
-        self.buffer = queue.Queue(maxsize=300000)
+    def __init__(self, buffer=None, maxsize=300000):
+        self.maxsize = maxsize
+        self.buffer = queue.Queue(maxsize=maxsize)
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.consumer = None
 
@@ -140,30 +141,34 @@ class DeepfmDataset(torch.utils.data.Dataset):
     def worker_init_fn(self, worker_id):
         # This will be called for each worker process
         self.consumer = self.initialize_consumer()
-        kafka_setup(self.consumer)
+        # kafka_setup(self.consumer)
         print(f"[{os.getpid()}] worker_init_fn")
+
+    def read_kafka_data(self):
+        while True:
+            message = next(self.consumer)
+            if message is not None:
+                message_dict = json.loads(message.value.decode('utf-8'))
+                train_data = torch.tensor(list(message_dict['train'].values())).float()
+                label_data = torch.tensor(list(message_dict['label'].values())).float()
+                timestamp = message.timestamp
+                data = {
+                    'input_data': train_data,
+                    'labels': label_data,
+                    'timestamp': timestamp
+                }
+                while self.buffer.full():
+                    self.consumer.poll(1)
+                    time.sleep(0.1)
+                self.buffer.put(data)
 
     def __len__(self):
         return 10 ** 5
 
     def __getitem__(self, idx):
         start = time.time()
-        while True:
-            message = next(self.consumer)
-            if message is not None:
-                message_dict = json.loads(message.value.decode('utf-8'))
-                train_data = message_dict['train']
-                label_data = message_dict['label']
-                train_data = torch.tensor(list(train_data.values())).float()
-                label_data = torch.tensor(list(label_data.values())).float()
-                timestamp = message.timestamp
-                get_item_g.set(time.time() - start)
-                data = {
-                    'input_data': train_data,
-                    'labels': label_data,
-                    'timestamp': timestamp
-                }
-                break
+        data = self.buffer.get()
+        get_item_g.set(time.time() - start)
         return data
 
 
