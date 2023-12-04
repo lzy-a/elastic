@@ -242,7 +242,7 @@ def train():
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     model = deepfm(feat_sizes=feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
-                   dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
+                   dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.2, ebedding_size=16,
                    l2_reg_linear=1e-3, device=f"cuda:{local_rank}").to(local_rank)
     ddp_model = DDP(model, [local_rank])
     loss_fn = nn.BCELoss(reduction='mean')
@@ -276,8 +276,8 @@ def train():
             get_sample_g.set(get_sample_time)
 
             cuda_start = time.time()
-            input_data = sample["input_data"]
-            labels = sample["labels"]
+            input_data = sample["input_data"].to(local_rank)
+            labels = sample["labels"].to(local_rank)
             # print("to cuda finish")
             to_cuda_g.set(time.time() - cuda_start)
             get_data_all_g.set(time.time() - start)
@@ -294,9 +294,10 @@ def train():
             forward_loss_g.set(time.time() - start)
             start = time.time()
             loss.backward()
+            # dist.barrier()
             loss_backward_g.set(time.time() - start)
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            # dist.barrier()
+
             # print("loss finish")
 
             # 同步梯度
