@@ -62,73 +62,6 @@ empty_cnt = 0
 global_batch_size = 65536
 
 
-class DCAPDataset(torch.utils.data.Dataset):
-    def __len__(self):
-        return 10 ** 8
-
-    def __getitem__(self, idx):
-        start = time.time()
-        local_rank = int(os.environ["LOCAL_RANK"])
-        message = next(consumer)
-        message_dict = json.loads(message.value.decode('utf-8'))
-
-        # 现在你可以通过键来访问train和label数据
-        train_data = message_dict['train']
-        label_data = message_dict['label']
-
-        train_tensor = torch.tensor(list(train_data.values())).float().cuda(local_rank)
-        label_tensor = torch.tensor(list(label_data.values())).float().cuda(local_rank)
-
-        timestamp = message.timestamp
-        get_item_g.set(time.time() - start)
-        return {
-            'input_data': train_tensor,
-            'labels': label_tensor,
-            'timestamp': timestamp
-        }
-
-
-# class DeepfmDataset(torch.utils.data.Dataset):
-#     def __init__(self, buffer_size=5000, num_consumers=4):
-#         self.buffer_size = buffer_size
-#         self.buffer = []
-#         self.local_rank = int(os.environ["LOCAL_RANK"])
-#         self.num_consumers = num_consumers
-#         self.consumer = consumer
-#         self.refill_buffer()
-#
-#
-#
-#     def refill_buffer(self):
-#         start = time.time()
-#         while True:
-#             while len(self.buffer) < self.buffer_size:
-#                 message = next(self.consumer)
-#                 message_dict = json.loads(message.value.decode('utf-8'))
-#
-#                 # 现在你可以通过键来访问train和label数据
-#                 train_data = message_dict['train']
-#                 label_data = message_dict['label']
-#
-#                 train_tensor = torch.tensor(list(train_data.values())).float().cuda(self.local_rank)
-#                 label_tensor = torch.tensor(list(label_data.values())).float().cuda(self.local_rank)
-#
-#                 timestamp = message.timestamp
-#                 get_item_g.set(time.time() - start)
-#
-#                 self.buffer.append({
-#                     'input_data': train_tensor,
-#                     'labels': label_tensor,
-#                     'timestamp': timestamp
-#                 })
-#
-#     def __len__(self):
-#         return 10 ** 5
-#
-#     def __getitem__(self, idx):
-#         if len(self.buffer) == 0:
-#             self.refill_buffer()
-#         return self.buffer.pop(0)
 class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer_size=300000, num_consumers=1):
         self.buffer_size = buffer_size
@@ -192,26 +125,6 @@ class DeepfmDataset(torch.utils.data.Dataset):
         get_item_g.set(time.time() - start)
         return data
 
-
-# 定义自定义数据加载器
-class KafkaDataset(torch.utils.data.Dataset):
-    def __len__(self):
-        return 10 ** 8
-
-    def __getitem__(self, idx):
-        start = time.time()
-        local_rank = int(os.environ["LOCAL_RANK"])
-        message = next(consumer)
-        data = message.value.decode('utf-8').split(',')
-        input_data = torch.tensor([float(d) for d in data[:10]]).cuda(local_rank)
-        labels = torch.tensor([float(d) for d in data[10:]]).cuda(local_rank)
-        timestamp = message.timestamp
-        get_item_g.set(time.time() - start)
-        return {
-            'input_data': input_data,
-            'labels': labels,
-            'timestamp': timestamp
-        }
 
 
 def save_checkpoint(epoch, model, optimizer, path):
