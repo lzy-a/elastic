@@ -186,9 +186,9 @@ if __name__ == "__main__":
             step_total += step_time
             data_start = time.time()
             step_start = time.time()
-            print(
-                'data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
-                    data_time, model_time, loss_time, optimizer_time, step_time))
+            # print(
+            #     'data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
+            #         data_time, model_time, loss_time, optimizer_time, step_time))
         #
         # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         # auc = get_auc(test_loader, model.to(device))
