@@ -58,7 +58,7 @@ def save_checkpoint(epoch, model, optimizer, path):
 if __name__ == "__main__":
     dist.init_process_group(backend="nccl")
     local_rank = int(os.environ["LOCAL_RANK"])
-    if local_rank==0:
+    if local_rank == 0:
         start_http_server(8000)
     loss_g = Gauge('loss', 'loss')
     auc_g = Gauge('auc', 'auc')
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     train_tensor_data = torch.utils.data.TensorDataset(torch.from_numpy(np.array(train_data)),
                                                        torch.from_numpy(np.array(train_label)))
     sampler = DistributedSampler(train_tensor_data)
-    train_loader = DataLoader(dataset=train_tensor_data, batch_size=batch_size,sampler=sampler)
+    train_loader = DataLoader(dataset=train_tensor_data, batch_size=batch_size, sampler=sampler)
 
     test_label = pd.DataFrame(test['label'])
     test_data = test.drop(columns=['label'])
@@ -133,18 +133,33 @@ if __name__ == "__main__":
     for epoch in range(epoches):
         total_loss_epoch = 0.0
         total_tmp = 0
-
         model.train().to(device)
+        step_start = time.time()
+        model_total = 0
+        loss_total = 0
+        step_total = 0
+        optimizer_total = 0
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
 
+            model_start = time.time()
             y_hat = model(x).to(device)
+            model_time = time.time() - model_start
+            model_total += model_time
 
+            loss_start = time.time()
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
             loss.backward()
+            loss_time = time.time() - loss_start
+            loss_total += loss_time
+
+            optimizer_start = time.time()
             optimizer.step()
+            optimizer_time = time.time() - optimizer_start
+            optimizer_total += optimizer_time
+
             print(f"batch: {index}, loss: {loss.item()}")
             if index % 10 == 0:
                 print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
@@ -152,10 +167,16 @@ if __name__ == "__main__":
             total_loss_epoch += loss.item()
             loss_g.set(loss.item())
             total_tmp += 1
+        step_total = time.time() - step_start
         #
-        save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
-        auc = get_auc(test_loader, model.to(device))
-        auc_g.set(auc)
-        print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
-                                                                                  total_loss_epoch / total_tmp, auc))
+        # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
+        # auc = get_auc(test_loader, model.to(device))
+        # auc_g.set(auc)
+        # print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
+        #                                                                           total_loss_epoch / total_tmp, auc))
+        print(
+            'epoch/epoches: {}/{}, forward time: {:.3f},loss time: {:.3f},optimizer time: {:.3f}, step time: {:.3f}'.format(
+                epoch, epoches, model_total / total_tmp,
+                                loss_total / total_tmp, optimizer_total / total_tmp,
+                                step_total / total_tmp))
     dist.destroy_process_group()

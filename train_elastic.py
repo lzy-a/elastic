@@ -66,7 +66,6 @@ class DeepfmDataset(torch.utils.data.Dataset):
     def __init__(self, buffer_size=300000, num_consumers=1):
         self.buffer_size = buffer_size
         self.buffer = queue.Queue()
-        self.buffer_lock = threading.Lock()
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.num_consumers = num_consumers
         self.consumer_queues = [queue.Queue() for _ in range(num_consumers)]
@@ -120,11 +119,9 @@ class DeepfmDataset(torch.utils.data.Dataset):
             empty_cnt = empty_cnt + 1
             time.sleep(0.0005)  # 0.0005秒的等待时间，你可以根据需要调整
 
-        with self.buffer_lock:
-            data = self.buffer.get()
+        data = self.buffer.get()
         get_item_g.set(time.time() - start)
         return data
-
 
 
 def save_checkpoint(epoch, model, optimizer, path):
@@ -243,7 +240,7 @@ def train():
             loss = loss_fn(outputs, labels.to(local_rank))
             loss.backward()
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            #dist.barrier()
+            # dist.barrier()
             # print("loss finish")
             grad_span_g.set(time.time() - start)
 
@@ -251,7 +248,7 @@ def train():
             start = time.time()
             optimizer.step()
             # print("optimizer finish")
-            #dist.barrier()
+            # dist.barrier()
             sync_span_g.set(time.time() - start)
 
             # 每个step花费的时间
