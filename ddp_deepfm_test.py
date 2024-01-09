@@ -160,9 +160,9 @@ if __name__ == "__main__":
             optimizer_time = time.time() - optimizer_start
             optimizer_total += optimizer_time
 
-            print(f"batch: {index}, loss: {loss.item()}")
+            # print(f"batch: {index}, loss: {loss.item()}")
             if index % 10 == 0:
-                print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
+                # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
                 start = time.time()
             total_loss_epoch += loss.item()
             loss_g.set(loss.item())
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         # print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
         #                                                                           total_loss_epoch / total_tmp, auc))
         print(
-            'epoch/epoches: {}/{}, forward time: {:.3f},loss time: {:.3f},optimizer time: {:.3f}, step time: {:.3f}'.format(
+            'epoch/epoches: {}/{}, forward time: {},loss time: {},optimizer time: {}, step time: {}'.format(
                 epoch, epoches, model_total / total_tmp,
                                 loss_total / total_tmp, optimizer_total / total_tmp,
                                 step_total / total_tmp))
