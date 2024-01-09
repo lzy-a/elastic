@@ -184,7 +184,7 @@ if __name__ == "__main__":
         # print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
         #                                                                           total_loss_epoch / total_tmp, auc))
         print(
-            'epoch/epoches: {}/{}, data time: {},forward time: {},loss time: {},optimizer time: {}, step time: {}'.format(
+            'epoch/epoches: {}/{}, data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
                 epoch, epoches, data_total / total_tmp, model_total / total_tmp,
                                 loss_total / total_tmp, optimizer_total / total_tmp,
                                 step_total / total_tmp))
