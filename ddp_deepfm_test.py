@@ -128,18 +128,19 @@ if __name__ == "__main__":
 
     loss_func = nn.BCELoss(reduction='mean')
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-
+    model_total = 0
+    loss_total = 0
+    step_total = 0
+    optimizer_total = 0
+    data_total = 0
+    total_tmp = 0
     start = time.time()
     for epoch in range(epoches):
         total_loss_epoch = 0.0
-        total_tmp = 0
+
         model.train().to(device)
         step_start = time.time()
-        model_total = 0
-        loss_total = 0
-        step_total = 0
-        optimizer_total = 0
-        data_total = 0
+
         data_start = time.time()
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
