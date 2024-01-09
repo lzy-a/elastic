@@ -165,11 +165,11 @@ if __name__ == "__main__":
             optimizer_total += optimizer_time
 
             # print(f"batch: {index}, loss: {loss.item()}")
-            if index % 10 == 0:
+            # if index % 10 == 0:
                 # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
-                start = time.time()
-            total_loss_epoch += loss.item()
-            loss_g.set(loss.item())
+                # start = time.time()
+            # total_loss_epoch += loss.item()
+            # loss_g.set(loss.item())
             total_tmp += 1
             data_start = time.time()
         step_total = time.time() - step_start
