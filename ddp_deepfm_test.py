@@ -139,9 +139,13 @@ if __name__ == "__main__":
         loss_total = 0
         step_total = 0
         optimizer_total = 0
+        data_total = 0
+        data_start = time.time()
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
             y = y.to(device).float()
+            data_time = time.time() - data_start
+            data_total += data_time
 
             model_start = time.time()
             y_hat = model(x).to(device)
@@ -167,6 +171,7 @@ if __name__ == "__main__":
             total_loss_epoch += loss.item()
             loss_g.set(loss.item())
             total_tmp += 1
+            data_start = time.time()
         step_total = time.time() - step_start
         #
         # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
