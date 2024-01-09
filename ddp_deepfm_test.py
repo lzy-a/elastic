@@ -186,7 +186,7 @@ if __name__ == "__main__":
                 epoch, epoches, data_total / total_tmp, model_total / total_tmp,
                                 loss_total / total_tmp, optimizer_total / total_tmp,
                                 step_total / total_tmp))
-        if epoch == 1:
+        if epoch == 0:
             model_total = 0
             loss_total = 0
             step_total = 0
