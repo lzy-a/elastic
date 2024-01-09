@@ -1,4 +1,5 @@
 import shutil
+import socket
 
 import pandas as pd
 import torch
@@ -56,6 +57,12 @@ def save_checkpoint(epoch, model, optimizer, path):
 
 
 if __name__ == "__main__":
+    os.environ["MASTER_ADDR"] = socket.gethostbyname('elastic-master-service.default.svc.cluster.local')
+    os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"
+    env_dict = {
+        key: os.environ[key]
+        for key in ("MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "LOCAL_WORLD_SIZE")
+    }
     dist.init_process_group(backend="nccl")
     local_rank = int(os.environ["LOCAL_RANK"])
     if local_rank == 0:
