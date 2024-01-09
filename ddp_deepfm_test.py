@@ -183,11 +183,12 @@ if __name__ == "__main__":
             # loss_g.set(loss.item())
             total_tmp += 1
             step_time = time.time() - step_start
+            step_total += step_time
             data_start = time.time()
+            step_start = time.time()
             print(
                 'data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
                     data_time, model_time, loss_time, optimizer_time, step_time))
-        step_total += time.time() - step_start
         #
         # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         # auc = get_auc(test_loader, model.to(device))
