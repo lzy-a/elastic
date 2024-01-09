@@ -128,19 +128,18 @@ if __name__ == "__main__":
 
     loss_func = nn.BCELoss(reduction='mean')
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-    model_total = 0
-    loss_total = 0
-    step_total = 0
-    optimizer_total = 0
-    data_total = 0
-    total_tmp = 0
     start = time.time()
     for epoch in range(epoches):
         total_loss_epoch = 0.0
 
         model.train().to(device)
         step_start = time.time()
-
+        model_total = 0
+        loss_total = 0
+        step_total = 0
+        optimizer_total = 0
+        data_total = 0
+        total_tmp = 0
         data_start = time.time()
         for index, (x, y) in enumerate(train_loader):
             x = x.to(device).float()
@@ -169,13 +168,13 @@ if __name__ == "__main__":
 
             # print(f"batch: {index}, loss: {loss.item()}")
             # if index % 10 == 0:
-                # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
-                # start = time.time()
+            # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
+            # start = time.time()
             # total_loss_epoch += loss.item()
             # loss_g.set(loss.item())
             total_tmp += 1
             data_start = time.time()
-        step_total = time.time() - step_start
+        step_total += time.time() - step_start
         #
         # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
         # auc = get_auc(test_loader, model.to(device))
@@ -187,4 +186,19 @@ if __name__ == "__main__":
                 epoch, epoches, data_total / total_tmp, model_total / total_tmp,
                                 loss_total / total_tmp, optimizer_total / total_tmp,
                                 step_total / total_tmp))
+
     dist.destroy_process_group()
+
+
+def mean(data):
+    if len(data) < 3:
+        raise ValueError("Input array should have at least 3 elements")
+
+    # 移除最大值和最小值
+    data.remove(max(data))
+    data.remove(min(data))
+
+    # 计算平均值
+    average = sum(data) / len(data)
+
+    return average
