@@ -156,13 +156,15 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             loss = loss_func(y_hat, y)
             loss.backward()
-            dist.barrier()
+            # dist.barrier()
+            torch.cuda.synchronize()
             loss_time = time.time() - loss_start
             loss_total += loss_time
 
             optimizer_start = time.time()
             optimizer.step()
-            dist.barrier()
+            # dist.barrier()
+            torch.cuda.synchronize()
             optimizer_time = time.time() - optimizer_start
             optimizer_total += optimizer_time
 
