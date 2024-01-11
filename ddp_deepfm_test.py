@@ -6,6 +6,8 @@ import torch
 from sklearn.metrics import log_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from torch.profiler import profile, record_function, ProfilerActivity
+
 import sys
 import os
 import torch.nn as nn
@@ -142,82 +144,75 @@ if __name__ == "__main__":
     optimizer_total = 0
     data_total = 0
     total_tmp = 0
-    for epoch in range(epoches):
-        total_loss_epoch = 0.0
+    with profile(activities=[
+        ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+        for epoch in range(epoches):
+            total_loss_epoch = 0.0
 
-        model.train().to(device)
-        step_start = time.time()
-        data_start = time.time()
-        for index, (x, y) in enumerate(train_loader):
-            x = x.to(device).float()
-            y = y.to(device).float()
-            data_time = time.time() - data_start
-            data_total += data_time
-
-            model_start = time.time()
-            y_hat = model(x).to(device)
-            torch.cuda.synchronize()
-            model_time = time.time() - model_start
-            model_total += model_time
-
-            loss_start = time.time()
-            optimizer.zero_grad()
-            loss = loss_func(y_hat, y)
-            loss.backward()
-            torch.cuda.synchronize()
-            loss_time = time.time() - loss_start
-            loss_total += loss_time
-
-            optimizer_start = time.time()
-            optimizer.step()
-            torch.cuda.synchronize()
-            optimizer_time = time.time() - optimizer_start
-            optimizer_total += optimizer_time
-
-            # print(f"batch: {index}, loss: {loss.item()}")
-            # if index % 10 == 0:
-            # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
-            # start = time.time()
-            # total_loss_epoch += loss.item()
-            # loss_g.set(loss.item())
-            total_tmp += 1
-            step_time = time.time() - step_start
-            step_total += step_time
-            data_start = time.time()
+            model.train().to(device)
             step_start = time.time()
-            # print(
-            #     'data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
-            #         data_time, model_time, loss_time, optimizer_time, step_time))
-        #
-        # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
-        # auc = get_auc(test_loader, model.to(device))
-        # auc_g.set(auc)
-        # print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
-        #                                                                           total_loss_epoch / total_tmp, auc))
-        print(
-            'epoch/epoches: {}/{}, data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
-                epoch, epoches, data_total / total_tmp, model_total / total_tmp,
-                                loss_total / total_tmp, optimizer_total / total_tmp,
-                                step_total / total_tmp))
-        if epoch == 0:
-            model_total = 0
-            loss_total = 0
-            step_total = 0
-            optimizer_total = 0
-            data_total = 0
-            total_tmp = 0
+            data_start = time.time()
+            for index, (x, y) in enumerate(train_loader):
+                x = x.to(device).float()
+                y = y.to(device).float()
+                data_time = time.time() - data_start
+                data_total += data_time
+                with record_function("Forward Pass"):
+                    model_start = time.time()
+                    y_hat = model(x).to(device)
+                    torch.cuda.synchronize()
+                    model_time = time.time() - model_start
+                    model_total += model_time
+
+                with record_function("Loss and Backward Pass"):
+                    loss_start = time.time()
+                    optimizer.zero_grad()
+                    loss = loss_func(y_hat, y)
+                    loss.backward()
+                    torch.cuda.synchronize()
+                    loss_time = time.time() - loss_start
+                    loss_total += loss_time
+
+                with record_function("Optimizer Pass"):
+                    optimizer_start = time.time()
+                    optimizer.step()
+                    torch.cuda.synchronize()
+                    optimizer_time = time.time() - optimizer_start
+                    optimizer_total += optimizer_time
+
+                # print(f"batch: {index}, loss: {loss.item()}")
+                # if index % 10 == 0:
+                # print(f"samples per sec: {10 * batch_size / (time.time() - start)}")
+                # start = time.time()
+                # total_loss_epoch += loss.item()
+                # loss_g.set(loss.item())
+                total_tmp += 1
+                step_time = time.time() - step_start
+                step_total += step_time
+                data_start = time.time()
+                step_start = time.time()
+                # print(
+                #     'data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
+                #         data_time, model_time, loss_time, optimizer_time, step_time))
+            #
+            # save_checkpoint(epoch, model, optimizer, "ddp_ckp.pt")
+            # auc = get_auc(test_loader, model.to(device))
+            # auc_g.set(auc)
+            # print('epoch/epoches: {}/{}, train loss: {:.3f}, test auc: {:.3f}'.format(epoch, epoches,
+            #                                                                           total_loss_epoch / total_tmp, auc))
+            print(
+                'epoch/epoches: {}/{}, data time: {:.5f},forward time: {:.5f},loss time: {:.5f},optimizer time: {:.5f}, step time: {:.5f}'.format(
+                    epoch, epoches, data_total / total_tmp, model_total / total_tmp,
+                                    loss_total / total_tmp, optimizer_total / total_tmp,
+                                    step_total / total_tmp))
+            if epoch == 0:
+                model_total = 0
+                loss_total = 0
+                step_total = 0
+                optimizer_total = 0
+                data_total = 0
+                total_tmp = 0
+    prof.export_chrome_trace("trace.json")
     dist.destroy_process_group()
 
 
-def mean(data):
-    if len(data) < 3:
-        raise ValueError("Input array should have at least 3 elements")
-
-    # 移除最大值和最小值
-    data.remove(max(data))
-    data.remove(min(data))
-
-    # 计算平均值
-    average = sum(data) / len(data)
-
-    return average
