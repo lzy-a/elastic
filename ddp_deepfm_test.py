@@ -156,6 +156,7 @@ if __name__ == "__main__":
 
             model_start = time.time()
             y_hat = model(x).to(device)
+            torch.cuda.synchronize()
             model_time = time.time() - model_start
             model_total += model_time
 
