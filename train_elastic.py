@@ -100,10 +100,10 @@ class DeepfmDataset(torch.utils.data.Dataset):
                     timestamp = message.timestamp
                     get_item_g.set(time.time() - start)
                     self.buffer.put({
-                            'input_data': train_data,
-                            'labels': label_data,
-                            'timestamp': timestamp
-                        })
+                        'input_data': train_data,
+                        'labels': label_data,
+                        'timestamp': timestamp
+                    })
             # print("buffer full")
             time.sleep(0.0001)
             full_cnt = full_cnt + 1
@@ -256,11 +256,11 @@ def train():
             full_cnt = 0
             # 测吞吐量
             step = step + 1
-            if step == 5:
+            if step % 5 == 1:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
                 # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
-                sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total/step, forward_total/step, backward_total/step, optimizer_total/step, step_total/step
+                sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total / step, forward_total / step, backward_total / step, optimizer_total / step, step_total / step
                 throughput = step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time / step)
                 throughput_g.set(throughput)
                 lag_g.set(lag_total / step)
@@ -269,9 +269,11 @@ def train():
                 backward_g.set(backward_time)
                 optimizer_g.set(optimizer_time)
                 step_g.set(step_time)
-                step = 0
-                lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
-                print(f"dara time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
+                if i == 0:
+                    lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
+                    step = 0
+                print(
+                    f"data time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
             # 保存模型
             if i % 1000 == 999:
                 start = time.time()
