@@ -99,8 +99,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
                     label_data = torch.tensor(list(label_data.values())).float()
                     timestamp = message.timestamp
                     get_item_g.set(time.time() - start)
-                    with self.buffer_lock:
-                        self.buffer.put({
+                    self.buffer.put({
                             'input_data': train_data,
                             'labels': label_data,
                             'timestamp': timestamp
