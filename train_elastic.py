@@ -61,7 +61,7 @@ empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
-global_batch_size = 16384
+global_batch_size = 65536
 
 
 class DeepfmDataset(torch.utils.data.Dataset):
