@@ -44,8 +44,10 @@ get_item_g = Gauge('get_item', 'read a sample cost time')
 get_sample_g = Gauge('get_sample', 'read samples cost time')
 to_cuda_g = Gauge('to_cuda', 'move to cost time')
 get_data_all_g = Gauge('get_data_all_time', 'get data cost time')
+forward_g = Gauge('get_forward_time', 'get forward cost time')
+backward_g = Gauge('get_backward_time', 'get backward cost time')
 grad_span_g = Gauge('grad', 'grad cost time')
-sync_span_g = Gauge('sync', 'sync cost time')
+optimizer_g = Gauge('optimizer', 'optimizer cost time')
 lag_g.set(0)
 # 设置 Kafka 主题和服务器地址
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
@@ -108,7 +110,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             full_cnt = full_cnt + 1
 
     def __len__(self):
-        return 10 ** 5
+        return 10 ** 7
 
     def __getitem__(self, idx):
         start = time.time()
@@ -214,48 +216,43 @@ def train():
     auc_timer = time.time()
     model.train().to(local_rank)
     step_start = time.time()
+    lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
     while True:
         start = time.time()
         for sample in dataloader:
             # 获取数据
-            get_sample_time = time.time() - start
-            get_sample_g.set(get_sample_time)
-
-            cuda_start = time.time()
             input_data = sample["input_data"]
             labels = sample["labels"]
-            # print("to cuda finish")
-            to_cuda_g.set(time.time() - cuda_start)
-            get_data_all_g.set(time.time() - start)
+            get_sample_total += time.time() - start
+
             # print(f"[{os.getpid()}] Received input data: {input_data}")
-            print(f"[{os.getpid()}] Received labels: {labels}")
+            # print(f"[{os.getpid()}] Received labels: {labels}")
             timestamp = sample["timestamp"][0].item() / 1000
-            lag = time.time() - timestamp
-            lag_g.set(lag)
-            # 前向传播+求梯度
+            lag_total += time.time() - timestamp
+
+            # 前向传播
             start = time.time()
             optimizer.zero_grad()
             outputs = ddp_model(input_data.to(local_rank))  # 输入数据要进行维度扩展
             loss = loss_fn(outputs, labels.to(local_rank))
+            forward_total += time.time() - start
+
+            start = time.time()
             loss.backward()
+            backward_total += time.time() - start
             print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
-            # dist.barrier()
-            # print("loss finish")
-            grad_span_g.set(time.time() - start)
 
             # 同步梯度
             start = time.time()
             optimizer.step()
-            # print("optimizer finish")
-            # dist.barrier()
-            sync_span_g.set(time.time() - start)
+            optimizer_total += time.time() - start
 
             # 每个step花费的时间
-            step_g.set(time.time() - step_start)
+            step_total += time.time() - step_start
             step_start = time.time()
 
             global empty_cnt, full_cnt
-            print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
+            # print(f'empty_cnt {empty_cnt} full_cnt {full_cnt}')
             empty_cnt = 0
             full_cnt = 0
             # 测吞吐量
@@ -263,20 +260,29 @@ def train():
             if step == 5:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
-                print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
-                throughput_g.set(step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (time.time() - step_timer))
+                # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
+                sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total/step, forward_total/step, backward_total/step, optimizer_total/step, step_total/step
+                throughput = step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time / step)
+                throughput_g.set(throughput)
+                lag_g.set(lag_total / step)
+                get_sample_g.set(sample_time)
+                forward_g.set(forward_time)
+                backward_g.set(backward_time)
+                optimizer_g.set(optimizer_time)
+                step_g.set(step_time)
                 step = 0
-                step_timer = time.time()
+                lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
+                print(f"dara time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
             # 保存模型
-            if i % 500 == 49:
+            if i % 1000 == 999:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
             # 评测模型
-            if time.time() - auc_timer > 180:
-                auc = get_auc(dataloader, ddp_model)
-                auc_g.set(auc)
-                auc_timer = time.time()
+            # if time.time() - auc_timer > 180:
+            #     auc = get_auc(dataloader, ddp_model)
+            #     auc_g.set(auc)
+            #     auc_timer = time.time()
             i += 1
             start = time.time()
 
