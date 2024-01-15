@@ -256,12 +256,13 @@ def train():
             full_cnt = 0
             # 测吞吐量
             step = step + 1
-            if step % 5 == 1:
+            batch_step = 5
+            if step % batch_step == 1:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
                 # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
                 sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total / step, forward_total / step, backward_total / step, optimizer_total / step, step_total / step
-                throughput = step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time / step)
+                throughput = batch_step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time)
                 throughput_g.set(throughput)
                 lag_g.set(lag_total / step)
                 get_sample_g.set(sample_time)
