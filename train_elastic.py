@@ -214,7 +214,6 @@ def train():
     auc_timer = time.time()
     model.train().to(local_rank)
     step_start = time.time()
-
     while True:
         start = time.time()
         for sample in dataloader:

@@ -7,7 +7,7 @@ endpoint_ip=$(python -c "import socket; print(socket.gethostbyname('elastic-mast
 
 # 执行torchrun命令
 torchrun \
-    --nnodes=1:3 \
+    --nnodes=1:6 \
     --nproc_per_node=1 \
     --max_restarts=3 \
     --rdzv_id=1 \

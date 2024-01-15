@@ -71,7 +71,7 @@ if __name__ == "__main__":
         start_http_server(8000)
     loss_g = Gauge('loss', 'loss')
     auc_g = Gauge('auc', 'auc')
-    batch_size = 1024
+    batch_size = 10240
     lr = 0.0005
     wd = 0.0001
     epoches = 10
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     optimizer_total = 0
     data_total = 0
     total_tmp = 0
-    with profile(activities=[
-        ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
-        for epoch in range(epoches):
+    # with profile(activities=[
+    #     ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+    for epoch in range(epoches):
             total_loss_epoch = 0.0
 
             model.train().to(device)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
                 with record_function("Forward Pass"):
                     model_start = time.time()
                     y_hat = model(x).to(device)
-                    torch.cuda.synchronize()
+                    # torch.cuda.synchronize()
                     model_time = time.time() - model_start
                     model_total += model_time
 
@@ -169,14 +169,14 @@ if __name__ == "__main__":
                     optimizer.zero_grad()
                     loss = loss_func(y_hat, y)
                     loss.backward()
-                    torch.cuda.synchronize()
+                    # torch.cuda.synchronize()
                     loss_time = time.time() - loss_start
                     loss_total += loss_time
 
                 with record_function("Optimizer Pass"):
                     optimizer_start = time.time()
                     optimizer.step()
-                    torch.cuda.synchronize()
+                    # torch.cuda.synchronize()
                     optimizer_time = time.time() - optimizer_start
                     optimizer_total += optimizer_time
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
                 optimizer_total = 0
                 data_total = 0
                 total_tmp = 0
-    prof.export_chrome_trace("trace.json")
+    # prof.export_chrome_trace("trace.json")
     dist.destroy_process_group()
 
 
