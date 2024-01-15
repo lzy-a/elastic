@@ -239,7 +239,7 @@ def train():
             start = time.time()
             loss.backward()
             backward_total += time.time() - start
-            print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
+            # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) \n")
 
             # 同步梯度
             start = time.time()
@@ -272,7 +272,7 @@ def train():
                 step = 0
                 lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
                 print(
-                    f"dara time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
+                    f"data time: {sample_time:.5f}, forward time: {forward_time:.5f}, backward time: {backward_time:.5f}, optimizer time: {optimizer_time:.5f}, step time: {step_time:.5f},throughput: {throughput}\n")
             # 保存模型
             if i % 1000 == 999:
                 start = time.time()
