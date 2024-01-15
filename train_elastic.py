@@ -61,7 +61,7 @@ empty_cnt = 0
 # consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group, auto_offset_reset='latest')
 # consumer.subscribe([topic])
 
-global_batch_size = 65536
+global_batch_size = 16384
 
 
 class DeepfmDataset(torch.utils.data.Dataset):
@@ -109,7 +109,7 @@ class DeepfmDataset(torch.utils.data.Dataset):
             full_cnt = full_cnt + 1
 
     def __len__(self):
-        return 10 ** 7
+        return 10 ** 8
 
     def __getitem__(self, idx):
         start = time.time()
@@ -256,13 +256,12 @@ def train():
             full_cnt = 0
             # 测吞吐量
             step = step + 1
-            batch_step = 5
-            if step % batch_step == 1:
+            if step == 5:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
                 # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
                 sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total / step, forward_total / step, backward_total / step, optimizer_total / step, step_total / step
-                throughput = batch_step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time)
+                throughput = step * int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time)
                 throughput_g.set(throughput)
                 lag_g.set(lag_total / step)
                 get_sample_g.set(sample_time)
@@ -270,11 +269,10 @@ def train():
                 backward_g.set(backward_time)
                 optimizer_g.set(optimizer_time)
                 step_g.set(step_time)
-                if i == 0:
-                    lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
-                    step = 0
+                step = 0
+                lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
                 print(
-                    f"data time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
+                    f"dara time: {sample_time}, forward time: {forward_time}, backward time: {backward_time}, optimizer time: {optimizer_time}, step time: {step_time},throughput: {throughput}\n")
             # 保存模型
             if i % 1000 == 999:
                 start = time.time()
