@@ -68,10 +68,11 @@ def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
             process_data(data, producer)
             chunk_time = time.time() - control_timer
             sleep_time = max(0.0, 1.0 - chunk_time)
+            throughput = target_rate / (chunk_time)
             with lock:
-                shared_throughput_dict[producer_id] = target_rate / (chunk_time)
+                shared_throughput_dict[producer_id] = throughput
             time.sleep(sleep_time)
-            print(f"throughput {target_rate / (chunk_time + sleep_time)}")
+            print(f"throughput {throughput}")
             control_timer = time.time()
 
 
