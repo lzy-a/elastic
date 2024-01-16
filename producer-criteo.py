@@ -18,10 +18,6 @@ topic = 'stream16'
 producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
 
 cnt = 0
-fast_rate = 0.0001
-slow_rate = 0.01
-rate = fast_rate
-
 g = Gauge('rate', 'kafka produce samples per sec')
 start_http_server(8000)  # prom exporter http://$pod_ip:8000/metrics
 
@@ -30,64 +26,86 @@ dense_feature = ['I' + str(i) for i in range(1, 14)]
 col_names = ['label'] + dense_feature + sparse_feature
 
 
-def send_message(message, sleep_interval, p):
-    global cnt
-    cnt = cnt + 1
-    producer.send(topic, value=message)
-    if p:
-        print("Sent message: {}".format(message))
+# def process_data(data):
+#     start = time.time()
+#     data[sparse_feature] = data[sparse_feature].fillna('-1', )
+#     end = time.time()
+#     span = end - start
+#     start = end
+#     # print(f"fillin sparse {span}")
+#     data[dense_feature] = data[dense_feature].fillna('0', )
+#     target = ['label']
+#     end = time.time()
+#     span = end - start
+#     start = end
+#     # print(f"fillin dense {span}")
+#     for feat in sparse_feature:
+#         lbe = LabelEncoder()
+#         data[feat] = lbe.fit_transform(data[feat])
+#     end = time.time()
+#     span = end - start
+#     start = end
+#     # print(f"sparse trans {span}")
+#     nms = MinMaxScaler(feature_range=(0, 1))
+#     data[dense_feature] = nms.fit_transform(data[dense_feature])
+#     end = time.time()
+#     span = end - start
+#     start = end
+#     # print(f"dense trans {span}")
+#
+#     train = data
+#
+#     train_label = pd.DataFrame(train['label'])
+#     train = train.drop(columns=['label'])
+#     end = time.time()
+#     span = end - start
+#     start = end
+#     print(f"drop {span}")
+#     i = 0
+#     p = False
+#     rate_timer = time.time()
+#     for train_row, label_row in zip(train.iterrows(), train_label.iterrows()):
+#         train_data = train_row[1]
+#         label_data = label_row[1]
+#         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
+#         message = json.dumps(message_dict).encode('utf-8')
+#         if i % 3000 == 999:
+#             p = True
+#             # g.set(1000 / (time.time() - rate_timer))
+#             rate_timer = time.time()
+#         send_message(message, fast_rate, p)
+#         p = False
+#         i = i + 1
 
-
-def process_data(data):
-    start = time.time()
-    data[sparse_feature] = data[sparse_feature].fillna('-1', )
-    end = time.time()
-    span = end - start
-    start = end
-    # print(f"fillin sparse {span}")
-    data[dense_feature] = data[dense_feature].fillna('0', )
-    target = ['label']
-    end = time.time()
-    span = end - start
-    start = end
-    # print(f"fillin dense {span}")
+def preprocess_data(chunk):
+    chunk[sparse_feature] = chunk[sparse_feature].fillna('-1')
+    chunk[dense_feature] = chunk[dense_feature].fillna('0')
     for feat in sparse_feature:
         lbe = LabelEncoder()
-        data[feat] = lbe.fit_transform(data[feat])
-    end = time.time()
-    span = end - start
-    start = end
-    # print(f"sparse trans {span}")
+        chunk[feat] = lbe.fit_transform(chunk[feat])
     nms = MinMaxScaler(feature_range=(0, 1))
-    data[dense_feature] = nms.fit_transform(data[dense_feature])
-    end = time.time()
-    span = end - start
-    start = end
-    # print(f"dense trans {span}")
+    chunk[dense_feature] = nms.fit_transform(chunk[dense_feature])
+    return chunk
 
-    train = data
 
-    train_label = pd.DataFrame(train['label'])
-    train = train.drop(columns=['label'])
-    end = time.time()
-    span = end - start
-    start = end
-    print(f"drop {span}")
-    i = 0
-    p = False
-    rate_timer = time.time()
+def process_data(chunk):
+    preprocess_data(chunk)
+    train_label = pd.DataFrame(chunk['label'])
+    train = chunk.drop(columns=['label'])
     for train_row, label_row in zip(train.iterrows(), train_label.iterrows()):
         train_data = train_row[1]
         label_data = label_row[1]
         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
         message = json.dumps(message_dict).encode('utf-8')
-        if i % 3000 == 999:
-            p = True
-            # g.set(1000 / (time.time() - rate_timer))
-            rate_timer = time.time()
-        send_message(message, fast_rate, p)
-        p = False
-        i = i + 1
+        send_message(message, False)
+
+
+def send_message(message, p):
+    global cnt
+    cnt += 1
+    producer.send(topic, value=message)
+    if p:
+        print("Sent message: {}".format(message))
 
 
 if __name__ == '__main__':
@@ -108,7 +126,7 @@ if __name__ == '__main__':
             process_data(data)
             chunk_time = time.time() - control_timer
             sleep_time = max(0.0, 1.0 - chunk_time)
-            g.set(target_rate/(chunk_time+sleep_time))
+            g.set(target_rate / (chunk_time + sleep_time))
             time.sleep(sleep_time)
             print(f"throughput {target_rate / (chunk_time + sleep_time)}")
             control_timer = time.time()
