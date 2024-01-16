@@ -51,7 +51,7 @@ def process_data(chunk, producer):
         send_message(message, producer, False)
 
 
-def run_producer(producer_id, shared_target_rate, shared_throughput_dict):
+def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
     while True:
         start = time.time()
@@ -68,7 +68,7 @@ def run_producer(producer_id, shared_target_rate, shared_throughput_dict):
             process_data(data, producer)
             chunk_time = time.time() - control_timer
             sleep_time = max(0.0, 1.0 - chunk_time)
-            with shared_throughput_dict.get_lock():
+            with lock:
                 shared_throughput_dict[producer_id] = target_rate / (chunk_time + sleep_time)
             time.sleep(sleep_time)
             print(f"throughput {target_rate / (chunk_time + sleep_time)}")
@@ -80,13 +80,13 @@ if __name__ == '__main__':
         target_rate = Value('i', 3000)  # 目标速率每秒3000个消息
         shared_throughput_dict = manager.dict()
         num_processes = 5
-
+        lock = manager.Lock()
         # Start Prometheus HTTP server
         start_http_server(8000)
 
         processes = []
         for i in range(num_processes):
-            process = Process(target=run_producer, args=(i, target_rate, shared_throughput_dict))
+            process = Process(target=run_producer, args=(i, target_rate, shared_throughput_dict, lock))
             processes.append(process)
             process.start()
 
