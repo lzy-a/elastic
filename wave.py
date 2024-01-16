@@ -14,9 +14,8 @@ bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream16'
 
 # Define a multiprocessing manager for shared variables
-manager = multiprocessing.Manager()
-cnt = manager.Value('i', 0)
-g = manager.Gauge('rate', 'kafka produce samples per sec')
+
+g = Gauge('rate', 'kafka produce samples per sec')
 
 sparse_feature = ['C' + str(i) for i in range(1, 27)]
 dense_feature = ['I' + str(i) for i in range(1, 14)]
@@ -52,18 +51,6 @@ def process_data(chunk, producer):
         message_dict = {"train": train_data.to_dict(), "label": label_data.to_dict()}
         message = json.dumps(message_dict).encode('utf-8')
         send_message(message, producer, False)
-
-
-def process_chunk(chunk, producer):
-    start = time.time()
-    process_data(chunk, producer)
-    end = time.time()
-    chunk_time = end - start
-    sleep_time = max(0.0, 1.0 - chunk_time)
-    with g.get_lock():
-        g.set(cnt.value / (chunk_time + sleep_time))
-    time.sleep(sleep_time)
-    print(f"throughput {cnt.value / (chunk_time + sleep_time)}")
 
 
 def run_producer(producer_id, shared_target_rate, shared_throughput_dict):
