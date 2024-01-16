@@ -110,3 +110,5 @@ if __name__ == '__main__':
             sleep_time = max(0.0, 1.0 - chunk_time)
             g.set(target_rate/(chunk_time+sleep_time))
             time.sleep(sleep_time)
+            print(f"throughput {target_rate / (chunk_time + sleep_time)}")
+            control_timer = time.time()
