@@ -12,6 +12,7 @@ from collections import OrderedDict, namedtuple, defaultdict
 import json
 import multiprocessing
 
+
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream16'
 

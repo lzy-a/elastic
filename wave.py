@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import json
 import multiprocessing
 from multiprocessing import Process, Manager, Value
+import datetime
 
 bootstrap_servers = '11.32.251.131:9092,11.32.224.11:9092,11.32.218.18:9092'
 topic = 'stream16'
@@ -68,12 +69,34 @@ def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
             process_data(data, producer)
             chunk_time = time.time() - control_timer
             sleep_time = max(0.0, 1.0 - chunk_time)
-            throughput = target_rate / (chunk_time)
+            throughput = target_rate / (chunk_time + sleep_time)
             with lock:
                 shared_throughput_dict[producer_id] = throughput
             time.sleep(sleep_time)
             print(f"throughput {throughput}")
             control_timer = time.time()
+
+
+def quadratic_curve(x):
+    if x > 600:
+        return 3000 + random.randint(-50, 0)
+    else:
+        return 8.0 / 300 * x ** 2 - 16 * x + 3000 + random.randint(-100, 100)
+
+
+def update_target_rate(shared_target_rate):
+    while True:
+        current_time = datetime.datetime.now().time()
+        hour = current_time.hour
+        minute = current_time.minute
+        x = hour * 60 + minute
+        y = quadratic_curve(x)
+        # 根据时间段动态更新 target_rate
+        with shared_target_rate.get_lock():
+            shared_target_rate.value = y
+
+        # 等待一段时间再次检查时间并更新
+        time.sleep(180)
 
 
 if __name__ == '__main__':
@@ -91,6 +114,9 @@ if __name__ == '__main__':
             processes.append(process)
             process.start()
 
+        # 启动更新 target_rate 的进程
+        update_process = Process(target=update_target_rate, args=(shared_target_rate,))
+        update_process.start()
         try:
             while True:
                 total_throughput = sum(shared_throughput_dict.values())
