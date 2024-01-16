@@ -36,10 +36,6 @@ def send_message(message, sleep_interval, p):
     producer.send(topic, value=message)
     if p:
         print("Sent message: {}".format(message))
-    sleep_interval = sleep_interval + random.uniform(-0.3 * sleep_interval, 0.3 * sleep_interval)
-    # g.set(1.0 / sleep_interval)
-    if sleep_interval > 0.001:
-        time.sleep(sleep_interval)
 
 
 def process_data(data):
@@ -87,7 +83,7 @@ def process_data(data):
         message = json.dumps(message_dict).encode('utf-8')
         if i % 1000 == 999:
             p = True
-            g.set(1000 / (time.time() - rate_timer))
+            # g.set(1000 / (time.time() - rate_timer))
             rate_timer = time.time()
         send_message(message, fast_rate, p)
         p = False
@@ -95,16 +91,22 @@ def process_data(data):
 
 
 if __name__ == '__main__':
+    target_rate = 3000  # 目标速率每秒3000个消息
     while True:
         start = time.time()
-        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=1024)
+        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=target_rate)
         end = time.time()
         span = end - start
         start = end
         print(f"reader {span}")
+        control_timer = time.time()
         for data in reader:
             end = time.time()
             span = end - start
             start = end
             print(f"read {span}")
             process_data(data)
+            chunk_time = time.time() - control_timer
+            sleep_time = max(0.0, 1.0 - chunk_time)
+            g.set(target_rate/chunk_time)
+            time.sleep(sleep_time)
