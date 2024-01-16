@@ -34,8 +34,6 @@ def preprocess_data(chunk):
 
 
 def send_message(message, producer, p):
-    with cnt.get_lock():
-        cnt.value += 1
     producer.send(topic, value=message)
     if p:
         print("Sent message: {}".format(message))
