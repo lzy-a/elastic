@@ -115,7 +115,7 @@ if __name__ == '__main__':
             process.start()
 
         # 启动更新 target_rate 的进程
-        update_process = Process(target=update_target_rate, args=(shared_target_rate,))
+        update_process = Process(target=update_target_rate, args=(target_rate,))
         update_process.start()
         try:
             while True:
