@@ -10,50 +10,38 @@ loss_time = np.array([0.00265152710808648, 0.0026409353468153213, 0.002628657002
 optimizer_time = np.array([0.002744463751051161, 0.0027477397070990667, 0.002752767118698407, 0.0027518242028108826, 0.0027536842893447554, 0.002768852975633409, 0.002795320087009006, 0.006654744678073459, 0.012456611350730614, 0.01819234424167209])
 step_time = np.array([0.007473639043172201, 0.007761578326755099, 0.008445500988972116, 0.009736940359613698, 0.012620897400395948, 0.035166088740030924, 0.06216595967610677, 0.1209075927734375, 0.2055911929519088, 0.31954730881585014])
 
-# 构建矩阵 A
-A = np.vstack([batch_sizes, np.ones_like(batch_sizes)]).T
+# 计算 Throughput
+throughput = batch_sizes / step_time
 
-# 使用 NNLS 求解
-x_data_time, _ = nnls(A, data_time)
-x_forward_time, _ = nnls(A, forward_time)
-x_loss_time, _ = nnls(A, loss_time)
-x_optimizer_time, _ = nnls(A, optimizer_time)
-x_step_time, _ = nnls(A, step_time)
+# 构建设计矩阵 X1 (Forward Time)
+X1 = np.vstack([batch_sizes, np.ones_like(batch_sizes)]).T
 
-# 生成拟合曲线
-fit_data_time = np.dot(A, x_data_time)
-fit_forward_time = np.dot(A, x_forward_time)
-fit_loss_time = np.dot(A, x_loss_time)
-fit_optimizer_time = np.dot(A, x_optimizer_time)
-fit_step_time = np.dot(A, x_step_time)
+# 使用 NNLS 求解权重向量 W1
+W1, _ = nnls(X1, throughput)
 
-# 绘制拟合曲线
-plt.figure(figsize=(10, 6))
+# 生成拟合曲线1
+fit_curve1 = X1 @ W1
 
-plt.subplot(2, 3, 1)
-plt.scatter(batch_sizes, data_time, label='Actual Data')
-plt.plot(batch_sizes, fit_data_time, label='Fitted Curve', color='red')
-plt.title('Data Time')
+# 构建设计矩阵 X2 (Step Time)
+X2 = np.vstack([batch_sizes, np.ones_like(batch_sizes)]).T
 
-plt.subplot(2, 3, 2)
-plt.scatter(batch_sizes, forward_time, label='Actual Data')
-plt.plot(batch_sizes, fit_forward_time, label='Fitted Curve', color='red')
-plt.title('Forward Time')
+# 使用 NNLS 求解权重向量 W2
+W2, _ = nnls(X2, step_time)
 
-plt.subplot(2, 3, 3)
-plt.scatter(batch_sizes, loss_time, label='Actual Data')
-plt.plot(batch_sizes, fit_loss_time, label='Fitted Curve', color='red')
-plt.title('Loss Time')
+# 生成拟合曲线2
+fit_curve2 = X2 @ W2
 
-plt.subplot(2, 3, 4)
-plt.scatter(batch_sizes, optimizer_time, label='Actual Data')
-plt.plot(batch_sizes, fit_optimizer_time, label='Fitted Curve', color='red')
-plt.title('Optimizer Time')
 
-plt.subplot(2, 3, 5)
-plt.scatter(batch_sizes, step_time, label='Actual Data')
-plt.plot(batch_sizes, fit_step_time, label='Fitted Curve', color='red')
-plt.title('Step Time')
+# 绘制拟合曲线2
+plt.scatter(batch_sizes, step_time, label='Actual Step Time')
+plt.plot(batch_sizes, fit_curve2, label='NNLS Fit Step Time', color='green')
+plt.xlabel('Batch Size')
+plt.ylabel('Step Time')
+plt.legend()
 
 plt.tight_layout()
 plt.show()
+
+# 打印拟合得到的权重向量
+print("Weight Vector for Forward Time (W1):", W1)
+print("Weight Vector for Step Time (W2):", W2)

@@ -96,16 +96,16 @@ def prepare_data(seed=1024):
     mms = MinMaxScaler(feature_range=(0, 1))
     df[dense_features] = mms.fit_transform(df[dense_features])
 
-    # feat_size1 = {feat: 1 for feat in dense_features}
-    # feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
-    # feat_sizes = {}
-    # feat_sizes.update(feat_size1)
-    # feat_sizes.update(feat_size2)
-    feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
-                  'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
-                  'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
-                  'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547,
-                  'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
+    feat_size1 = {feat: 1 for feat in dense_features}
+    feat_size2 = {feat: len(df[feat].unique()) for feat in sparse_features}
+    feat_sizes = {}
+    feat_sizes.update(feat_size1)
+    feat_sizes.update(feat_size2)
+    # feat_sizes = {'I1': 1, 'I2': 1, 'I3': 1, 'I4': 1, 'I5': 1, 'I6': 1, 'I7': 1, 'I8': 1, 'I9': 1, 'I10': 1, 'I11': 1,
+    #               'I12': 1, 'I13': 1, 'C1': 1460, 'C2': 583, 'C3': 10131227, 'C4': 2202608, 'C5': 305, 'C6': 24,
+    #               'C7': 12517, 'C8': 633, 'C9': 3, 'C10': 93145, 'C11': 5683, 'C12': 8351593, 'C13': 3194, 'C14': 27,
+    #               'C15': 14992, 'C16': 5461306, 'C17': 10, 'C18': 5652, 'C19': 2173, 'C20': 4, 'C21': 7046547,
+    #               'C22': 18, 'C23': 15, 'C24': 286181, 'C25': 105, 'C26': 142572}
 
     return df, feature_names, dense_features, sparse_features, feat_sizes
 
