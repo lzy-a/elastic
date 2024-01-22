@@ -133,7 +133,7 @@ if __name__ == "__main__":
     test_data = test.drop(columns=['label'])
     test_tensor_data = torch.utils.data.TensorDataset(torch.from_numpy(np.array(test_data)),
                                                       torch.from_numpy(np.array(test_label)))
-    test_loader = DataLoader(dataset=test_tensor_data, shuffle=False, batch_size=batch_size, numworkers=1)
+    test_loader = DataLoader(dataset=test_tensor_data, shuffle=False, batch_size=batch_size, num_workers=1)
 
     loss_func = nn.BCELoss(reduction='mean')
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
