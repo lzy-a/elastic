@@ -15,7 +15,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 import random
-from deepfm import deepfm
 import time
 from prometheus_client import Gauge
 from prometheus_client import start_http_server
