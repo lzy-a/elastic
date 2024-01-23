@@ -178,7 +178,7 @@ if __name__ == "__main__":
         for batch_size in batch_sizes:
             print(f'batch_size:{batch_size}')
             # Update batch size
-            train_loader = get_loader(batch_size=batch_size)
+            DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
             start = time.time()
             model_total = 0
