@@ -25,6 +25,8 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 import csv
 
+from test_model_for_batchsize.resnet import ResNet, BasicBlock
+
 
 def get_auc(loader, model):
     pred, target = [], []
@@ -145,20 +147,22 @@ if __name__ == "__main__":
 
     # device = 'cuda' if torch.cuda.is_available() else 'cpu'
     device = "cuda:{}".format(local_rank)
-    model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
-                   dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
-                   l2_reg_linear=1e-3, device=device).to(local_rank)
-
+    # model = deepfm(feat_sizes, sparse_feature_columns=sparse_features, dense_feature_columns=dense_features,
+    #                dnn_hidden_units=[1000, 500, 250], dnn_dropout=0.9, ebedding_size=16,
+    #                l2_reg_linear=1e-3, device=device).to(local_rank)
+    model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=10).to(device)
+    loss_func = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     model = DDP(model, [local_rank])
 
     # train_loader, test_loader = get_loader(df, feature_names, batch_size=batch_size)
 
-    loss_func = nn.BCELoss(reduction='mean')
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    # loss_func = nn.BCELoss(reduction='mean')
+    # optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
 
     # prof.export_chrome_trace("trace.json")
 
-    batch_sizes = [16, 64, 128, 256, 512, 1024, 4096, 8192, 16384, 32768, 65536]
+    batch_sizes = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
 
     # CSV file setup
     csv_file_path = "experiment_results.csv"
@@ -170,8 +174,9 @@ if __name__ == "__main__":
         csv_writer.writeheader()
 
         for batch_size in batch_sizes:
+            print(f'batch_size:{batch_size}')
             # Update batch size
-            train_loader, test_loader = get_loader(df, feature_names, batch_size=batch_size)
+            train_loader, _ = ResNet.get_loader(batch_size=batch_size)
 
             start = time.time()
             model_total = 0
