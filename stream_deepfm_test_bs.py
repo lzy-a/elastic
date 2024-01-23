@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import shutil
 import socket
@@ -166,7 +167,7 @@ def get_auc(loader, model):
     return auc
 
 
-def train():
+def train(batch_size=1024,csv_writer=None):
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
@@ -206,9 +207,8 @@ def train():
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
     dataset = DeepfmDataset(num_consumers=num_consumers)
-    dataloader = DataLoader(dataset, batch_size=global_batch_size, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, pin_memory=True)
 
-    global i
     i = 0
     step = 0
     step_timer = time.time()
@@ -255,13 +255,18 @@ def train():
             empty_cnt = 0
             full_cnt = 0
             # 测吞吐量
+            if i <= 2:
+                i = i + 1
+                start = time.time()
+                lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
+                continue
             step = step + 1
-            if step == 5:
+            if step == 50:
                 loss_value = loss.item()
                 loss_g.set(loss_value)
                 # print(f"[{os.getpid()}] epoch {i} (rank = {rank}, local_rank = {local_rank}) loss = {loss_value}\n")
                 sample_time, forward_time, backward_time, optimizer_time, step_time = get_sample_total / step, forward_total / step, backward_total / step, optimizer_total / step, step_total / step
-                throughput = int(os.environ["WORLD_SIZE"]) * global_batch_size / (step_time)
+                throughput = int(os.environ["WORLD_SIZE"]) * batch_size / (step_time)
                 throughput_g.set(throughput)
                 lag_g.set(lag_total / step)
                 get_sample_g.set(sample_time)
@@ -271,18 +276,24 @@ def train():
                 step_g.set(step_time)
                 step = 0
                 lag_total, get_sample_total, forward_total, backward_total, optimizer_total, step_total = 0, 0, 0, 0, 0, 0
+                experiment_data = {
+                    "BatchSize": batch_size,
+                    "DataTime": sample_time,
+                    "ForwardTime": forward_time,
+                    "LossTime": backward_time,
+                    "OptimizerTime": optimizer_time,
+                    "StepTime": step_time,
+                    "Throughput": throughput,
+                }
+                csv_writer.writerow(experiment_data)
                 print(
                     f"data time: {sample_time:.5f}, forward time: {forward_time:.5f}, backward time: {backward_time:.5f}, optimizer time: {optimizer_time:.5f}, step time: {step_time:.5f},throughput: {throughput}\n")
+                return
             # 保存模型
             if i % 1000 == 999:
                 start = time.time()
                 save_checkpoint(i, ddp_model, optimizer, ckp_path)
                 save_g.set(time.time() - start)
-            # 评测模型
-            # if time.time() - auc_timer > 180:
-            #     auc = get_auc(dataloader, ddp_model)
-            #     auc_g.set(auc)
-            #     auc_timer = time.time()
             i += 1
             start = time.time()
 
@@ -322,7 +333,22 @@ def run():
     start = time.time()
     dist.init_process_group(backend="nccl", timeout=timedelta(seconds=60))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
-    train()
+
+    batch_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+
+    # CSV file setup
+    csv_file_path = "experiment_results.csv"
+    fieldnames = ["BatchSize", "DataTime", "ForwardTime", "LossTime", "OptimizerTime", "StepTime",
+                  "Throughput"]
+
+    with open(csv_file_path, mode='w', newline='') as csv_file:
+        csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        csv_writer.writeheader()
+
+        for batch_size in batch_sizes:
+            print(f'batch_size:{batch_size}')
+            train(batch_size, csv_writer)
+
     dist.destroy_process_group()
 
 
