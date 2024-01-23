@@ -24,7 +24,7 @@ import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 import csv
-
+import torchvision.models as models
 from test_model_for_batchsize.resnet import ResNet, BasicBlock
 
 
