@@ -152,9 +152,10 @@ if __name__ == "__main__":
     #                l2_reg_linear=1e-3, device=device).to(local_rank)
     model = models.resnet18(pretrained=True)
     model.fc = nn.Linear(model.fc.in_features, 10)
+    model = model.to(local_rank)
     loss_func = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-    model = DDP(model, [local_rank])
+    model = DDP(model, device_ids=[local_rank])
 
     transform = transforms.Compose([
         transforms.ToTensor(),
