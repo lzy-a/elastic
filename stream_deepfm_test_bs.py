@@ -167,7 +167,7 @@ def get_auc(loader, model):
     return auc
 
 
-def train(batch_size=1024,csv_writer=None):
+def train(batch_size=1024,csv_writer=None,dataset=None):
     sparse_features = ['C' + str(i) for i in range(1, 27)]
     dense_features = ['I' + str(i) for i in range(1, 14)]
     col_names = ['label'] + dense_features + sparse_features
@@ -206,7 +206,6 @@ def train(batch_size=1024,csv_writer=None):
 
     # sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size,
     #                                                           rank=rank)
-    dataset = DeepfmDataset(num_consumers=num_consumers)
     dataloader = DataLoader(dataset, batch_size=batch_size, pin_memory=True)
 
     i = 0
@@ -333,7 +332,7 @@ def run():
     start = time.time()
     dist.init_process_group(backend="nccl", timeout=timedelta(seconds=60))
     print(f"[{os.getpid()}] init time: {time.time() - start}")
-
+    dataset = DeepfmDataset(num_consumers=num_consumers)
     batch_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
 
     # CSV file setup
@@ -347,7 +346,7 @@ def run():
 
         for batch_size in batch_sizes:
             print(f'batch_size:{batch_size}')
-            train(batch_size, csv_writer)
+            train(batch_size, csv_writer,dataset)
 
     dist.destroy_process_group()
 
