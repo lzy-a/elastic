@@ -162,7 +162,7 @@ if __name__ == "__main__":
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset = CIFAR10(root='./data', train=True, download=True, transform=transform)
-    train_loader = DataLoader(dataset, batch_size=4, shuffle=True, download = True,num_workers=4)
+    train_loader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4)
 
     batch_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
 
