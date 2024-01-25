@@ -101,7 +101,7 @@ def update_target_rate(shared_target_rate):
             shared_target_rate.value = int(y)
 
         # 等待一段时间再次检查时间并更新
-        print(f"Update target_rate to {y}")
+        print(f"{x} Update target_rate to {y}")
         time.sleep(10)
 
 
