@@ -54,11 +54,12 @@ def process_data(chunk, producer):
 
 def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
+    with lock:
+        target_rate = shared_target_rate.value
     while True:
         start = time.time()
-        with lock:
-            target_rate = shared_target_rate.value
-        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=target_rate)
+        chunk_size = 3000
+        reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=chunk_size)
         end = time.time()
         span = end - start
         start = end
@@ -68,10 +69,13 @@ def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
             span = end - start
             start = end
             process_data(data, producer)
+            #chunk time 是发送chunk size个消息的时间
             chunk_time = time.time() - control_timer
-            sleep_time = max(0.0, 1.0 - chunk_time)
-            throughput = target_rate / (chunk_time + sleep_time)
+            target_time = chunk_size / target_rate
+            sleep_time = max(0.0, target_time - chunk_time)
+            throughput = chunk_size / (chunk_time + sleep_time)
             with lock:
+                target_rate = shared_target_rate.value
                 shared_throughput_dict[producer_id] = throughput
             time.sleep(sleep_time)
             print(f"throughput {throughput}")
