@@ -94,7 +94,7 @@ def update_target_rate(shared_target_rate):
         y = quadratic_curve(x)
         # 根据时间段动态更新 target_rate
         with shared_target_rate.get_lock():
-            shared_target_rate.value = y
+            shared_target_rate.value = int(y)
 
         # 等待一段时间再次检查时间并更新
         print(f"Update target_rate to {y}")
@@ -103,7 +103,7 @@ def update_target_rate(shared_target_rate):
 
 if __name__ == '__main__':
     with Manager() as manager:
-        target_rate = Value('d', 3000)  # 目标速率每秒3000个消息
+        target_rate = Value('i', 3000)  # 目标速率每秒3000个消息
         shared_throughput_dict = manager.dict()
         num_processes = 1
         lock = manager.Lock()
