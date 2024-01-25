@@ -56,7 +56,8 @@ def run_producer(producer_id, shared_target_rate, shared_throughput_dict, lock):
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
     while True:
         start = time.time()
-        target_rate = shared_target_rate.value
+        with lock:
+            target_rate = shared_target_rate.value
         reader = pd.read_csv('./data/dac_sample.txt', names=col_names, sep='\t', chunksize=target_rate)
         end = time.time()
         span = end - start
@@ -96,7 +97,8 @@ def update_target_rate(shared_target_rate):
             shared_target_rate.value = y
 
         # 等待一段时间再次检查时间并更新
-        time.sleep(180)
+        print(f"Update target_rate to {y}")
+        time.sleep(10)
 
 
 if __name__ == '__main__':
