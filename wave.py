@@ -103,7 +103,7 @@ def update_target_rate(shared_target_rate):
 
 if __name__ == '__main__':
     with Manager() as manager:
-        target_rate = Value('i', 3000)  # 目标速率每秒3000个消息
+        target_rate = Value('d', 3000)  # 目标速率每秒3000个消息
         shared_throughput_dict = manager.dict()
         num_processes = 1
         lock = manager.Lock()
