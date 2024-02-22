@@ -17,7 +17,8 @@ python -u run.py \
  --task_id ECL \
  --model $model \
  --data custom \
- --features M \
+ --target throughput \
+ --features S \
  --seq_len 96 \
  --label_len 48 \
  --pred_len $preLen \
@@ -38,7 +39,8 @@ python -u run.py \
  --task_id Exchange \
  --model $model \
  --data custom \
- --features M \
+ --target throughput \
+ --features S \
  --seq_len 96 \
  --label_len 48 \
  --pred_len $preLen \
@@ -59,7 +61,8 @@ python -u run.py \
  --task_id traffic \
  --model $model \
  --data custom \
- --features M \
+ --features S \
+ --target throughput \
  --seq_len 96 \
  --label_len 48 \
  --pred_len $preLen \
@@ -81,7 +84,8 @@ python -u run.py \
  --task_id weather \
  --model $model \
  --data custom \
- --features M \
+ --target throughput \
+ --features S \
  --seq_len 96 \
  --label_len 48 \
  --pred_len $preLen \
