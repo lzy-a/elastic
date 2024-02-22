@@ -12,8 +12,8 @@ do
 ## electricity
 python -u run.py \
  --is_training 1 \
- --root_path ./dataset/electricity/ \
- --data_path electricity.csv \
+ --root_path ./dataset/ \
+ --data_path throughput_dataset.csv \
  --task_id ECL \
  --model $model \
  --data custom \
@@ -33,8 +33,8 @@ python -u run.py \
 # exchange
 python -u run.py \
  --is_training 1 \
- --root_path ./dataset/exchange_rate/ \
- --data_path exchange_rate.csv \
+ --root_path ./dataset/ \
+ --data_path throughput_dataset.csv \
  --task_id Exchange \
  --model $model \
  --data custom \
@@ -54,8 +54,8 @@ python -u run.py \
 # traffic
 python -u run.py \
  --is_training 1 \
- --root_path ./dataset/traffic/ \
- --data_path traffic.csv \
+ --root_path ./dataset/ \
+ --data_path throughput_dataset.csv \
  --task_id traffic \
  --model $model \
  --data custom \
@@ -76,8 +76,8 @@ python -u run.py \
 # weather
 python -u run.py \
  --is_training 1 \
- --root_path ./dataset/weather/ \
- --data_path weather.csv \
+ --root_path ./dataset/ \
+ --data_path throughput_dataset.csv \
  --task_id weather \
  --model $model \
  --data custom \
