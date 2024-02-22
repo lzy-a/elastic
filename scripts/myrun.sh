@@ -8,74 +8,6 @@ do
 for preLen in 96 192 336 720
 do
 
-
-## electricity
-python -u run.py \
- --is_training 1 \
- --root_path ./dataset/ \
- --data_path throughput_dataset.csv \
- --task_id ECL \
- --model $model \
- --data custom \
- --target throughput \
- --features S \
- --seq_len 96 \
- --label_len 48 \
- --pred_len $preLen \
- --e_layers 2 \
- --d_layers 1 \
- --factor 3 \
- --enc_in 321 \
- --dec_in 321 \
- --c_out 321 \
- --des 'Exp' \
- --itr 3
-
-# exchange
-python -u run.py \
- --is_training 1 \
- --root_path ./dataset/ \
- --data_path throughput_dataset.csv \
- --task_id Exchange \
- --model $model \
- --data custom \
- --target throughput \
- --features S \
- --seq_len 96 \
- --label_len 48 \
- --pred_len $preLen \
- --e_layers 2 \
- --d_layers 1 \
- --factor 3 \
- --enc_in 8 \
- --dec_in 8 \
- --c_out 8 \
- --des 'Exp' \
- --itr 3
-
-# traffic
-python -u run.py \
- --is_training 1 \
- --root_path ./dataset/ \
- --data_path throughput_dataset.csv \
- --task_id traffic \
- --model $model \
- --data custom \
- --features S \
- --target throughput \
- --seq_len 96 \
- --label_len 48 \
- --pred_len $preLen \
- --e_layers 2 \
- --d_layers 1 \
- --factor 3 \
- --enc_in 862 \
- --dec_in 862 \
- --c_out 862 \
- --des 'Exp' \
- --itr 3 \
- --train_epochs 3
-
 # weather
 python -u run.py \
  --is_training 1 \
@@ -92,12 +24,11 @@ python -u run.py \
  --e_layers 2 \
  --d_layers 1 \
  --factor 3 \
- --enc_in 21 \
- --dec_in 21 \
- --c_out 21 \
+ --enc_in 1 \
+ --dec_in 1 \
+ --c_out 1 \
  --des 'Exp' \
  --itr 3
 done
-
 done
 
