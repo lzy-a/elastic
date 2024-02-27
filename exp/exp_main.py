@@ -11,7 +11,6 @@ from models import FEDformer, Autoformer, Informer, Transformer
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
 from utils.metrics import metric
 
-
 warnings.filterwarnings('ignore')
 
 
@@ -238,9 +237,7 @@ class Exp_Main(Exp_Basic):
 
         preds = np.array(preds)
         trues = np.array(trues)
-        trues = test_data.inverse_transform(trues)
-        preds = test_data.inverse_transform(preds)
-        print(preds,trues)
+
         print('test shape:', preds.shape, trues.shape)
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
@@ -265,7 +262,13 @@ class Exp_Main(Exp_Basic):
         np.save(folder_path + 'true.npy', trues)
 
         # plot
-        #把trues和preds inverse transform
+        # 先reshape,把trues和preds inverse transform
+        preds = preds.reshape(-1, 1)
+        trues = trues.reshape(-1, 1)
+        trues = test_data.inverse_transform(trues)
+        preds = test_data.inverse_transform(preds)
+        print(trues)
+        print(preds)
         visual(trues[0, :, -1], preds[0, :, -1], folder_path + '0.pdf')
 
         return
@@ -319,6 +322,6 @@ class Exp_Main(Exp_Basic):
         return preds
 
     def infer(self, data):
-        #加载模型
+        # 加载模型
         self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + self.args.setting, 'checkpoint.pth')))
-        #把data进行数据转换
+        # 把data进行数据转换
