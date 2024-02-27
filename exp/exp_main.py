@@ -263,8 +263,8 @@ class Exp_Main(Exp_Basic):
 
         # plot
         #把trues和preds inverse transform
-        trues = self.args.inverse_transform(trues)
-        preds = self.args.inverse_transform(preds)
+        trues = test_data.inverse_transform(trues)
+        preds = test_data.inverse_transform(preds)
         visual(trues[0, :, -1], preds[0, :, -1], folder_path + '0.pdf')
 
         return
