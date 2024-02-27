@@ -1,24 +1,18 @@
-#cd ..
-
 for model in FEDformer Autoformer Informer Transformer
 do
 
-for preLen in 96 192 336 720
-do
-
-# weather
 python -u run.py \
  --is_training 1 \
  --root_path ./dataset/ \
  --data_path throughput_dataset.csv \
- --task_id weather \
- --model $model \
+ --task_id infer \
  --data custom \
+ --model $model \
  --target throughput \
  --features S \
  --seq_len 96 \
- --label_len 48 \
- --pred_len $preLen \
+ --label_len 12 \
+ --pred_len 1 \
  --e_layers 2 \
  --d_layers 1 \
  --factor 3 \
@@ -27,6 +21,5 @@ python -u run.py \
  --c_out 1 \
  --des 'Exp' \
  --itr 3
-done
-done
 
+done
