@@ -5,7 +5,7 @@ python -u run.py \
  --is_training 1 \
  --root_path ./dataset/ \
  --data_path throughput_dataset.csv \
- --task_id infer \
+ --task_id thrpt \
  --data custom \
  --model $model \
  --target throughput \
