@@ -261,6 +261,12 @@ class Exp_Main(Exp_Basic):
         np.save(folder_path + 'pred.npy', preds)
         np.save(folder_path + 'true.npy', trues)
 
+        # plot
+        #把trues和preds inverse transform
+        trues = self.args.inverse_transform(trues)
+        preds = self.args.inverse_transform(preds)
+        visual(trues[0, :, -1], preds[0, :, -1], folder_path + '0.pdf')
+
         return
 
     def predict(self, setting, load=False):
@@ -310,3 +316,8 @@ class Exp_Main(Exp_Basic):
         np.save(folder_path + 'real_prediction.npy', preds)
 
         return preds
+
+    def infer(self, data):
+        #加载模型
+        self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + self.args.setting, 'checkpoint.pth')))
+        #把data进行数据转换
