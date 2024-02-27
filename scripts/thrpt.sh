@@ -11,15 +11,16 @@ python -u run.py \
  --target throughput \
  --features S \
  --seq_len 96 \
- --label_len 12 \
+ --label_len 48 \
  --pred_len 1 \
  --e_layers 2 \
  --d_layers 1 \
+ --train_epochs 5 \
  --factor 3 \
  --enc_in 1 \
  --dec_in 1 \
  --c_out 1 \
  --des 'Exp' \
- --itr 3
+ --itr 1
 
 done
