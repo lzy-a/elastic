@@ -269,7 +269,7 @@ class Exp_Main(Exp_Basic):
         preds = test_data.inverse_transform(preds)
         print(trues)
         print(preds)
-        visual(trues[0, :, -1], preds[0, :, -1], folder_path + '0.pdf')
+        visual(trues, preds, folder_path + 'test.pdf')
 
         return
 
