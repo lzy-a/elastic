@@ -14,7 +14,7 @@ python -u run.py \
  --target target\
  --features S \
  --seq_len 96 \
- --label_len $label_len \
+ --label_len $labelLen \
  --pred_len 4 \
  --e_layers 2 \
  --d_layers 1 \
