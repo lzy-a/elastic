@@ -18,7 +18,7 @@ python -u run.py \
  --pred_len $preLen \
  --e_layers 2 \
  --d_layers 1 \
- --train_epochs 5 \
+ --train_epochs 10 \
  --factor 3 \
  --enc_in 1 \
  --dec_in 1 \

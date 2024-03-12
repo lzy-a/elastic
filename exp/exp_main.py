@@ -267,8 +267,8 @@ class Exp_Main(Exp_Basic):
         trues = trues.reshape(-1, 1)
         trues = test_data.inverse_transform(trues)
         preds = test_data.inverse_transform(preds)
-        print(trues)
-        print(preds)
+        #print(trues)
+        #print(preds)
         visual(trues, preds, folder_path + 'test.pdf')
 
         return
