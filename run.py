@@ -16,6 +16,8 @@ def main():
     parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
 
     # basic config
+    parser.add_argument('--is_infer', type=int, default=0, help='infer')
+    parser.add_argument('--infer_data', type=str, default='0', help='infer data')
     parser.add_argument('--is_training', type=int, default=1, help='status')
     parser.add_argument('--task_id', type=str, default='test', help='task id')
     parser.add_argument('--model', type=str, default='FEDformer',
@@ -105,7 +107,10 @@ def main():
     print(args)
 
     Exp = Exp_Main
-
+    if args.is_infer:
+        exp = Exp(args)
+        exp.infer(args.infer_data)
+        return
     if args.is_training:
         for ii in range(args.itr):
             # setting record of experiments
