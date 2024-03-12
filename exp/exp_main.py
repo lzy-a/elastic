@@ -322,6 +322,41 @@ class Exp_Main(Exp_Basic):
         return preds
 
     def infer(self, data):
-        # 加载模型
-        self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + self.args.setting, 'checkpoint.pth')))
-        # 把data进行数据转换
+        # 把data进行数据转换,str to np.array
+        data_array = parse_string_to_array(data)
+        data_tensor = torch.tensor(data_array, dtype=torch.float32).unsqueeze(0)  # 添加一个batch维度
+        data_tensor = data_tensor.to(self.device) if self.args.use_gpu else data_tensor
+
+        self.model.eval()
+        with torch.no_grad():
+            # 把data作为输入，进行推理
+            # decoder input
+            dec_inp = torch.zeros_like(data_tensor[:, -self.args.pred_len:, :]).float()
+            dec_inp = torch.cat([data_tensor[:, :self.args.label_len, :], dec_inp], dim=1).float()
+            dec_inp = dec_inp.to(self.device) if self.args.use_gpu else dec_inp
+            # encoder - decoder
+            if self.args.use_amp:
+                with torch.cuda.amp.autocast():
+                    if self.args.output_attention:
+                        outputs = self.model(data_tensor, dec_inp)[0]
+                    else:
+                        outputs = self.model(data_tensor, dec_inp)
+            else:
+                if self.args.output_attention:
+                    outputs = self.model(data_tensor, dec_inp)[0]
+                else:
+                    outputs = self.model(data_tensor, dec_inp)
+
+        # 返回推理结果
+        print(f"infer: outputs: {outputs}, shape {outputs.shape}")
+        return outputs
+
+
+def parse_string_to_array(data_string):
+    # 移除字符串两端的方括号并将其分割成单独的数字字符串
+    number_strings = data_string.strip('[]').split(',')
+    # 将数字字符串转换为整数列表
+    numbers = [int(num) for num in number_strings]
+    # 将整数列表转换为NumPy数组
+    data_array = np.array(numbers)
+    return data_array
