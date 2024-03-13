@@ -353,10 +353,11 @@ class Exp_Main(Exp_Basic):
 
 
 def parse_string_to_array(data_string):
+    #data string:[166974.9525, 169120.0995, 173434.1802]
     # 移除字符串两端的方括号并将其分割成单独的数字字符串
     number_strings = data_string.strip('[]').split(',')
-    # 将数字字符串转换为整数列表
-    numbers = [int(num) for num in number_strings]
-    # 将整数列表转换为NumPy数组
+    # 将数字字符串转换为浮点数列表
+    numbers = [float(n) for n in number_strings]
+    # 将列表转换为NumPy数组
     data_array = np.array(numbers)
     return data_array

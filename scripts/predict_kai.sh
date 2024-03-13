@@ -6,9 +6,9 @@ do
 
 python -u run.py \
  --is_training 0 \
- --is_infer 1 \
+ --do_predict True \
  --root_path ./dataset/ \
- --data_path format_data.csv \
+ --data_path predict_data.csv \
  --task_id kai \
  --data custom \
  --model $model \

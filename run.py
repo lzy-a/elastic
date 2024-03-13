@@ -124,10 +124,7 @@ def main():
     print(args)
 
     Exp = Exp_Main
-    if args.is_infer:
-        exp = Exp(args)
-        exp.infer(args.infer_data)
-        return
+
     if args.is_training:
         for ii in range(args.itr):
             # setting record of experiments
@@ -153,15 +150,17 @@ def main():
                 ii)
 
             exp = Exp(args)  # set experiments
+
+            if args.do_predict:
+                print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+                exp.predict(setting, True)
+                return
+
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(setting)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting)
-
-            if args.do_predict:
-                print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-                exp.predict(setting, True)
 
             torch.cuda.empty_cache()
     else:
