@@ -261,10 +261,13 @@ class Exp_Main(Exp_Basic):
         np.save(folder_path + 'pred.npy', preds)
         np.save(folder_path + 'true.npy', trues)
 
+
+
         # plot
         # 先reshape,把trues和preds inverse transform
         preds = preds.reshape(-1, 1)
         trues = trues.reshape(-1, 1)
+        visual(trues, preds, folder_path + 'test1.pdf')
         trues = test_data.inverse_transform(trues)
         preds = test_data.inverse_transform(preds)
         # print(trues)
