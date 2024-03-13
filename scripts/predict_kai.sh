@@ -5,7 +5,7 @@ for labelLen in 24 48 96
 do
 
 python -u run.py \
- --is_training 0 \
+ --is_training 1 \
  --do_predict  \
  --root_path ./dataset/ \
  --data_path predict_data.csv \
