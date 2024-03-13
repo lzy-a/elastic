@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import torch
 from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from utils.timefeatures import time_features
 import warnings
 
@@ -219,7 +219,8 @@ class Dataset_Custom(Dataset):
         self.__read_data__()
 
     def __read_data__(self):
-        self.scaler = StandardScaler()
+        # self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
 
@@ -317,7 +318,8 @@ class Dataset_Pred(Dataset):
         self.__read_data__()
 
     def __read_data__(self):
-        self.scaler = StandardScaler()
+        # self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
         '''
