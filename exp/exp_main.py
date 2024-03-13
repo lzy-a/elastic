@@ -267,8 +267,8 @@ class Exp_Main(Exp_Basic):
         trues = trues.reshape(-1, 1)
         trues = test_data.inverse_transform(trues)
         preds = test_data.inverse_transform(preds)
-        #print(trues)
-        #print(preds)
+        # print(trues)
+        # print(preds)
         visual(trues, preds, folder_path + 'test.pdf')
 
         return
@@ -310,7 +310,8 @@ class Exp_Main(Exp_Basic):
                 preds.append(pred)
 
         preds = np.array(preds)
-        preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
+        # preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
+        preds = preds.reshape(-1, 1)
         preds = pred_data.inverse_transform(preds)
         print(preds)
         # result save
@@ -354,7 +355,7 @@ class Exp_Main(Exp_Basic):
 
 
 def parse_string_to_array(data_string):
-    #data string:[166974.9525, 169120.0995, 173434.1802]
+    # data string:[166974.9525, 169120.0995, 173434.1802]
     # 移除字符串两端的方括号并将其分割成单独的数字字符串
     number_strings = data_string.strip('[]').split(',')
     # 将数字字符串转换为浮点数列表
