@@ -1,7 +1,7 @@
-for model in FEDformer Autoformer Informer Transformer
+for model in Informer Transformer
 do
 
-for labelLen in 24 48 96
+for labelLen in 48
 do
 
 python -u run.py \
