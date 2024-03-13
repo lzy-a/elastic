@@ -6,7 +6,7 @@ do
 
 python -u run.py \
  --is_training 0 \
- --do_predict True \
+ --do_predict 'True' \
  --root_path ./dataset/ \
  --data_path predict_data.csv \
  --task_id kai \
