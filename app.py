@@ -7,12 +7,16 @@ import numpy as np
 
 app = Flask(__name__)
 
+
 class Args:
     def __init__(self, is_training=1, itr=3, task_id='test', model='FEDformer', mode_select='random', modes=64,
-                 version='Fourier', L=3, base='legendre', cross_activation='tanh', data='custom', root_path='./dataset/',
-                 data_path='ETTh1.csv', features='M', target='OT', freq='h', detail_freq='h', checkpoints='./checkpoints/',
-                 seq_len=96, label_len=48, pred_len=96, enc_in=7, dec_in=7, c_out=7, d_model=512, n_heads=8, e_layers=2,
-                 d_layers=1, d_ff=2048, moving_avg=[24], factor=1, distil=True, dropout=0.05, embed='timeF', activation='gelu',
+                 version='Fourier', L=3, base='legendre', cross_activation='tanh', data='custom',
+                 root_path='./dataset/',
+                 data_path='predict_data.csv', features='S', target='target', freq='h', detail_freq='h',
+                 checkpoints='./checkpoints/',
+                 seq_len=96, label_len=48, pred_len=4, enc_in=1, dec_in=1, c_out=1, e_layers=2,
+                 d_layers=1, moving_avg=[24], factor=3, distil=True, dropout=0.05, embed='timeF',
+                 activation='gelu',
                  output_attention=False, do_predict=True, num_workers=10, train_epochs=10, batch_size=32, patience=3,
                  learning_rate=0.0001, des='test', loss='mse', lradj='type1', use_amp=False, use_gpu=True, gpu=0,
                  use_multi_gpu=False, devices='0,1'):
@@ -66,10 +70,13 @@ class Args:
         self.gpu = gpu
         self.use_multi_gpu = use_multi_gpu
         self.devices = devices
+
+
 # 模拟的推理函数
 def perform_inference(input_data):
     # 在这里调用你的模型推理逻辑，这里简单地返回输入数据
     return f"Model Inference Result: {input_data}"
+
 
 @app.route('/predict', methods=['GET'])
 def predict():
@@ -89,6 +96,7 @@ def predict():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def modelTrain():
     Exp = Exp_Main
@@ -135,13 +143,12 @@ def modelTrain():
 
             torch.cuda.empty_cache()
 
+
 def modelPridict():
     Exp = Exp_Main
     args = Args(
         itr=1,
-        model='FEDformer',
-        seq_len=96,
-        pred_len=96,
+        model='transformer',
     )
     result = []
     if args.is_training:
@@ -177,6 +184,7 @@ def modelPridict():
             torch.cuda.empty_cache()
 
     return result
+
 
 if __name__ == '__main__':
     # modelTrain()
