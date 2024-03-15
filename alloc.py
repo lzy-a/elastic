@@ -1,5 +1,4 @@
 import requests
-import json
 
 # ClickHouse服务器的URL
 url = ' http://themis-olap-gateway.internal/'
@@ -19,16 +18,16 @@ ORDER BY minute ASC
 """
 
 # 构造请求体
-data = {'query': query}
+data = query.encode('utf-8')
 
 try:
     # 发送POST请求
-    response = requests.post(url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    response = requests.post(url, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
 
     # 检查响应状态码
     if response.status_code == 200:
         # 解析并打印结果
-        result = response.json()
+        result = response.text
         print(result)
     else:
         print(f"请求失败，状态码：{response.status_code}")
