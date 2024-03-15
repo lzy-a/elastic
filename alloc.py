@@ -21,15 +21,17 @@ ORDER BY minute ASC
 # 构造请求体
 data = {'query': query}
 
-# 发送POST请求
-response = requests.post(url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+try:
+    # 发送POST请求
+    response = requests.post(url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
 
-# 检查响应状态码
-if response.status_code == 200:
-    # 解析并打印结果
-    result = response.json()
-    print(result)
-else:
-    print(f"请求失败，状态码：{response.status_code}")
-    result = response.json()
-    print(result)
+    # 检查响应状态码
+    if response.status_code == 200:
+        # 解析并打印结果
+        result = response.json()
+        print(result)
+    else:
+        print(f"请求失败，状态码：{response.status_code}")
+        print(f"错误信息：{response.text}")
+except requests.exceptions.RequestException as e:
+    print(f"请求异常：{e}")
