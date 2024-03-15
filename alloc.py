@@ -31,3 +31,5 @@ if response.status_code == 200:
     print(result)
 else:
     print(f"请求失败，状态码：{response.status_code}")
+    result = response.json()
+    print(result)
