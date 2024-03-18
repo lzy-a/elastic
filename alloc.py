@@ -3,6 +3,12 @@ import requests
 # ClickHouse服务器的URL
 url = ' http://themis-olap-gateway.internal/'
 
+token = 'ChtodWFuZ2ppYW4vdXNlckBrdWFpc2hvdS5jb20aDTE3Mi4yMy44Ni4xMTEiAzc4NSi47-aA5TEwuJez_OUxQAJKFnsiaXAiOiIxNzIuMjMuODYuMTExIn0.ZIJhrb_LPAOw8a0UTl6-X9lfM2FbPJ2Cbzd0_2VPpoA'
+headers = {
+    'Authorization': f'Bearer {token}',
+    # 可能还有其他需要的头部信息
+}
+
 # SQL查询
 query = """
 SELECT toStartOfMinute(fromUnixTimestamp(toInt64(ts / 1000))) AS minute,
@@ -22,7 +28,7 @@ data = query.encode('utf-8')
 
 try:
     # 发送POST请求
-    response = requests.post(url, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    response = requests.post(url, data=data, headers=headers)
 
     # 检查响应状态码
     if response.status_code == 200:
