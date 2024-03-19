@@ -3,10 +3,13 @@ import requests
 # ClickHouse服务器的URL
 url = ' http://themis-olap-gateway.internal/'
 
-token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoNMTcyLjIzLjg2LjExMSIEMTcxOSjrvvOk5TEw64mD6OYxQAJKFnsiaXAiOiIxNzIuMjMuODYuMTExIn0.KLzXx2WDpGn6opn8cIvTz6N9J7Q9iOxln6wE-H2C8yw'
+token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoNMTcyLjI1LjcyLjEwNyiygeCl5TEwsruXqeUxOAo.U23YmdmEB3X_SK5ydbHiX7pmcT6HeXZAruk2yQ0TnBY'
 headers = {
-    'Authorization': f'Bearer {token}',
-    # 可能还有其他需要的头部信息
+    'Ks-Auth-Principal': 'liuziyang05/user@kuaishou.com',
+    'Ks-Auth-Token': token,
+    'Ks-Auth-Type': 'USER',
+    'Ks-Auth-User': 'liuziyang05',
+    'Ks-Query-Id': '123456'
 }
 
 # SQL查询
