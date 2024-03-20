@@ -28,10 +28,10 @@ class KMLHttpException(Exception):
 
 class KMLAIFlowController(object):
     def __init__(self, flowid):
-        self.flowid = flowid
-        self.basic_info_comid = None
-        self.config_comid = None
-        self.task_comid = None
+        self.flowid = flowid  # workspace id
+        self.basic_info_comid = None  # 迭代详情id
+        self.config_comid = None  # 训练配置id
+        self.task_comid = None  # 模型训练id
         self.sparse_basicinfo = None
         self.sparse_config_yamldict = None
         self.submit_config = {"config": {"globalConfig": {"enableDebug": False}, "runtimeModeConfigs": [
@@ -52,7 +52,7 @@ class KMLAIFlowController(object):
 
         self.workspace_detail = json.loads(http_ret.text)
         data = self.workspace_detail
-        print(json.dumps(data, indent=4))
+        print('workspace_detail:', json.dumps(data, indent=4))
         for i in range(len(self.workspace_detail['components'])):
             comp = self.workspace_detail['components'][i]
             if comp['identity'] == 'sparse-basic':
@@ -65,10 +65,13 @@ class KMLAIFlowController(object):
         print(self.basic_info_comid, self.config_comid, self.task_comid)
         basicinfo_url = 'https://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/basic-info'.format(
             self.basic_info_comid)
+        print('basicinfo_url:', basicinfo_url)
         http_ret = requests.get(basicinfo_url, headers=headers)
         if http_ret.status_code != 200:
             raise KMLHttpException(http_ret.status_code, "get_basicinfo stage, url:{}".format(basicinfo_url))
         self.sparse_basicinfo = json.loads(http_ret.text)
+        data = self.sparse_basicinfo
+        print('sparse_basicinfo:', json.dumps(data, indent=4))
 
         sparse_config_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/sparse-training-config'.format(
             self.config_comid)
@@ -77,6 +80,8 @@ class KMLAIFlowController(object):
             raise KMLHttpException(http_ret.status_code, "get_sparse_config stage, url:{}".format(sparse_config_url))
         sparse_config = json.loads(http_ret.text)
         self.sparse_config_yamldict = yaml.load(sparse_config['config'], Loader=yaml.Loader)
+        data = self.sparse_config_yamldict
+        print('sparse_config_yamldict:', json.dumps(data, indent=4))
 
     def change_image(self, image_name):
         print('new image name', image_name)
@@ -181,7 +186,3 @@ if __name__ == '__main__':
             time.sleep(10)
     except KMLHttpException as e:
         print(e)
-
-
-
-
