@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import csv
 
+
 class ClickHouseQuery:
     def __init__(self, url, token, user):
         self.url = url
@@ -44,14 +45,6 @@ class ClickHouseQuery:
             # 每15行变成一行，第二个单元格是平均值
             for i in range(0, len(lines), 15):
                 data = lines[i:i + 15]
-                time_str = data[0].split('\t')[0]
-                values = [float(row.split('\t')[1]) for row in data]
-                avg_value = sum(values) / len(values)
-                result.append([time_str, avg_value])
-
-            # 处理剩余不足15行的情况
-            if len(lines) % 15 != 0:
-                data = lines[-(len(lines) % 15):]
                 time_str = data[0].split('\t')[0]
                 values = [float(row.split('\t')[1]) for row in data]
                 avg_value = sum(values) / len(values)
