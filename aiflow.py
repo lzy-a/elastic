@@ -65,13 +65,13 @@ class KMLAIFlowController(object):
         print(self.basic_info_comid, self.config_comid, self.task_comid)
         basicinfo_url = 'https://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/basic-info'.format(
             self.basic_info_comid)
-        print('basicinfo_url:', basicinfo_url)
+        # print('basicinfo_url:', basicinfo_url)
         http_ret = requests.get(basicinfo_url, headers=headers)
         if http_ret.status_code != 200:
             raise KMLHttpException(http_ret.status_code, "get_basicinfo stage, url:{}".format(basicinfo_url))
         self.sparse_basicinfo = json.loads(http_ret.text)
         data = self.sparse_basicinfo
-        print('sparse_basicinfo:', json.dumps(data, indent=4))
+        # print('sparse_basicinfo:', json.dumps(data, indent=4))
 
         sparse_config_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/sparse-training-config'.format(
             self.config_comid)
@@ -81,7 +81,7 @@ class KMLAIFlowController(object):
         sparse_config = json.loads(http_ret.text)
         self.sparse_config_yamldict = yaml.load(sparse_config['config'], Loader=yaml.Loader)
         data = self.sparse_config_yamldict
-        print('sparse_config_yamldict:', json.dumps(data, indent=4))
+        # print('sparse_config_yamldict:', json.dumps(data, indent=4))
 
     def change_image(self, image_name):
         print('new image name', image_name)
@@ -128,7 +128,7 @@ class KMLAIFlowController(object):
 
         record_status = json.loads(http_ret.text)
         task_id = record_status['taskMetaId']
-        cluster_name = task_st['clusterName']
+        cluster_name = record_status['clusterName']
         self.log_url = 'http://kml.corp.kuaishou.com/v2/log-manager/api/v1/logs?namespace=gray-dedicated&taskType=task&taskId={}&instance=kml-task-{}-record-{}-prod-launcher-0&clusterName={}&limit=100&trimTimestamp=true'.format(
             self.panda_id, task_id, self.panda_id, cluster_name)
 
