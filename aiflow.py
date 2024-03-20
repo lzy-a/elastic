@@ -51,6 +51,7 @@ class KMLAIFlowController(object):
             raise KMLHttpException(http_ret.status_code, "start stage, workspace_url:{}".format(workspace_url))
 
         self.workspace_detail = json.loads(http_ret.text)
+        print(self.workspace_detail)
         for i in range(len(self.workspace_detail['components'])):
             comp = self.workspace_detail['components'][i]
             if comp['identity'] == 'sparse-basic':
