@@ -170,13 +170,13 @@ if __name__ == '__main__':
         # kml_controller.panda_id = 4293359
         # kml_controller.compose_log_url()
         #
-        # while True:
-        #     rawlog = kml_controller.get_launcher_log()
-        #     logtxt = json.loads(rawlog)
-        #     # print(logtxt['logs'])
-        #     kml_controller.get_record_status()
-        #     print('status', kml_controller.latest_record_status['status'])
-    #         time.sleep(10)
+        while True:
+            rawlog = kml_controller.get_launcher_log()
+            logtxt = json.loads(rawlog)
+            # print(logtxt['logs'])
+            kml_controller.get_record_status()
+            print('status', kml_controller.latest_record_status['status'])
+            time.sleep(10)
     except KMLHttpException as e:
         print(e)
 
