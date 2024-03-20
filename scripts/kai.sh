@@ -1,7 +1,7 @@
 for model in FEDformer Autoformer Informer Transformer
 do
 
-for labelLen in 24 48 96
+for predLen in 4 12 48 96
 do
 
 python -u run.py \
@@ -14,7 +14,7 @@ python -u run.py \
  --target target\
  --features S \
  --seq_len 96 \
- --label_len $labelLen \
+ --label_len 48 \
  --pred_len 4 \
  --e_layers 2 \
  --d_layers 1 \
