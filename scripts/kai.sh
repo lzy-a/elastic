@@ -15,7 +15,7 @@ python -u run.py \
  --features S \
  --seq_len 96 \
  --label_len 48 \
- --pred_len $pred_len \
+ --pred_len $predLen \
  --e_layers 2 \
  --freq '15min' \
  --d_layers 1 \
