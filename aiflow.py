@@ -173,7 +173,7 @@ if __name__ == '__main__':
         while True:
             rawlog = kml_controller.get_launcher_log()
             logtxt = json.loads(rawlog)
-            # print(logtxt['logs'])
+            print(logtxt['logs'])
             kml_controller.get_record_status()
             print('status', kml_controller.latest_record_status['status'])
             time.sleep(10)
