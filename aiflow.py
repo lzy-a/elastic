@@ -32,8 +32,8 @@ class KMLAIFlowController(object):
         self.basic_info_comid = None  # 迭代详情id
         self.config_comid = None  # 训练配置id
         self.task_comid = None  # 模型训练id
-        self.sparse_basicinfo = None
-        self.sparse_config_yamldict = None
+        self.sparse_basicinfo = None # 迭代详情
+        self.sparse_config_yamldict = None # 训练配置
         self.submit_config = {"config": {"globalConfig": {"enableDebug": False}, "runtimeModeConfigs": [
             {"runtimeMode": "train", "coldStart": True, "willSaveModel": True, "useBtq": False,
              "willSaveRollbackModel": False}], "defaultRuntimeMode": "train"}}
@@ -100,6 +100,7 @@ class KMLAIFlowController(object):
         self.sparse_config_yamldict['io_config']['train']['end_time_ms'] = end_time_ms
 
     def submit_sparse_config(self):
+        #提交新的训练配置
         sparse_config_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/sparse-training-config'.format(
             self.config_comid)
         new_config_yamlstr = yaml.dump(self.sparse_config_yamldict, default_flow_style=False, allow_unicode=True)
@@ -111,6 +112,7 @@ class KMLAIFlowController(object):
             raise KMLHttpException(http_ret.status_code, "get_basicinfo stage, url:{}".format(sparse_config_url))
 
     def submit_record(self):
+
         task_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/task-record'.format(self.task_comid)
         http_ret = requests.post(task_url, headers=headers, data=json.dumps(self.submit_config))
         if http_ret.status_code != 200:
@@ -173,8 +175,8 @@ if __name__ == '__main__':
         # kml_controller.change_train_begin_time_ms(bts)
         # kml_controller.change_train_end_time_ms(ends)
         # kml_controller.submit_sparse_config()
-        # # kml_controller.submit_record()
-        kml_controller.panda_id = 4293359
+        kml_controller.submit_record()
+        # kml_controller.panda_id = 4293359
         kml_controller.compose_log_url()
         #
         while True:
