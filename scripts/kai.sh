@@ -17,7 +17,6 @@ python -u run.py \
  --label_len 48 \
  --pred_len $predLen \
  --e_layers 2 \
- --freq '15min' \
  --d_layers 1 \
  --train_epochs 8 \
  --factor 3 \
