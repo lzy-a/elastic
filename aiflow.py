@@ -177,6 +177,8 @@ if __name__ == '__main__':
         # kml_controller.submit_sparse_config()
         kml_controller.submit_record()
         # kml_controller.panda_id = 4293359
+        time.sleep(5*60)
+        kml_controller.stop_record()
         kml_controller.compose_log_url()
         #
         while True:
