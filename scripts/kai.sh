@@ -1,4 +1,4 @@
-for predLen in 4 12 48 96
+for predLen in 4  48 96
 do
 
 for model in FEDformer Autoformer Informer Transformer
