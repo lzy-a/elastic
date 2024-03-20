@@ -167,8 +167,8 @@ if __name__ == '__main__':
         # kml_controller.change_train_end_time_ms(ends)
         # kml_controller.submit_sparse_config()
         # # kml_controller.submit_record()
-        # kml_controller.panda_id = 4293359
-        # kml_controller.compose_log_url()
+        kml_controller.panda_id = 4293359
+        kml_controller.compose_log_url()
         #
         while True:
             rawlog = kml_controller.get_launcher_log()
