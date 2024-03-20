@@ -61,6 +61,34 @@ class ClickHouseQuery:
             print(f"Error occurred while writing result to {path}: {e}")
 
 
+# k1 = 3.4657635304789602 , k2 = 0.0009867267625321835 , k3 = 0.021788545751746453
+class GPUAllocator:
+    def __init__(self, k1=3.4657635304789602, k2=0.0009867267625321835, k3=0.021788545751746453):
+        self.k1 = k1
+        self.k2 = k2
+        self.k3 = k3
+
+    def calculate_throughput(self, w):
+        return 16384 / (self.k1 / w + self.k3 + self.k2 * w)
+
+    def throughput_to_workernum(self, throughput):
+        # 定义二分法搜索的范围
+        left = 2
+        right = 32
+
+        # 二分搜索
+        while left < right:
+            mid = (left + right) // 2
+            thrpt = self.calculate_throughput(mid)
+            if thrpt >= throughput:
+                right = mid
+            else:
+                left = mid + 1
+
+        # 返回向上取整到最接近的 2 的倍数的结果
+        return left if left % 2 == 0 else left + 1
+
+
 if __name__ == '__main__':
 
     # 使用示例
@@ -84,3 +112,8 @@ if __name__ == '__main__':
     if result is not None:
         print(result)
         clickhouse_client.res_to_csv(result, './dataset/predict_data.csv')
+
+    allocator = GPUAllocator()
+    throughput = 190000  # 给定吞吐量
+    worker_num = allocator.throughput_to_workernum(throughput)
+    print(f"对应的 worker 数量为: {worker_num}")
