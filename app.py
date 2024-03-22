@@ -18,7 +18,7 @@ class Args:
                  d_layers=1, moving_avg=[24], factor=3, distil=True, dropout=0.05, embed='timeF',
                  activation='gelu',d_model=512, n_heads=8, d_ff=2048,
                  output_attention=False, do_predict=True, num_workers=10, train_epochs=10, batch_size=32, patience=3,
-                 learning_rate=0.0001, des='test', loss='mse', lradj='type1', use_amp=False, use_gpu=True, gpu=0,
+                 learning_rate=0.0001, des='exp', loss='mse', lradj='type1', use_amp=False, use_gpu=True, gpu=0,
                  use_multi_gpu=False, devices='0,1'):
         self.is_training = is_training
         self.itr = itr
