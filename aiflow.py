@@ -35,7 +35,7 @@ class KMLAIFlowController(object):
         self.sparse_basicinfo = None  # 迭代详情
         self.sparse_config_yamldict = None  # 训练配置
         self.submit_config = {"config": {"globalConfig": {"enableDebug": False}, "runtimeModeConfigs": [
-            {"runtimeMode": "train", "coldStart": True, "willSaveModel": True, "useBtq": False,
+            {"runtimeMode": "train", "coldStart": False, "willSaveModel": True, "useBtq": False,
              "willSaveRollbackModel": False}], "defaultRuntimeMode": "train"}}
         self.log_url = None
         self.replicas_num = None
