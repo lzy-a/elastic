@@ -28,12 +28,12 @@ class KMLHttpException(Exception):
 
 class KMLAIFlowController(object):
     def __init__(self, flowid):
-        self.flowid = flowid
-        self.basic_info_comid = None
-        self.config_comid = None
-        self.task_comid = None
-        self.sparse_basicinfo = None
-        self.sparse_config_yamldict = None
+        self.flowid = flowid  # workspace id
+        self.basic_info_comid = None  # 迭代详情id
+        self.config_comid = None  # 训练配置id
+        self.task_comid = None  # 模型训练id
+        self.sparse_basicinfo = None  # 迭代详情
+        self.sparse_config_yamldict = None  # 训练配置
         self.submit_config = {"config": {"globalConfig": {"enableDebug": False}, "runtimeModeConfigs": [
             {"runtimeMode": "train", "coldStart": True, "willSaveModel": True, "useBtq": False,
              "willSaveRollbackModel": False}], "defaultRuntimeMode": "train"}}
@@ -122,7 +122,11 @@ class KMLAIFlowController(object):
     def change_train_end_time_ms(self, end_time_ms):
         self.sparse_config_yamldict['io_config']['train']['end_time_ms'] = end_time_ms
 
+    def change_batch_size(self, batch_size):
+        self.sparse_config_yamldict['io_config']['train']['batch_size'] = batch_size
+
     def submit_sparse_config(self):
+        # 把self.sparse_config_yamldict作为新的训练配置提交
         sparse_config_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/sparse-training-config'.format(
             self.config_comid)
         new_config_yamlstr = yaml.dump(self.sparse_config_yamldict, default_flow_style=False, allow_unicode=True)
@@ -134,6 +138,7 @@ class KMLAIFlowController(object):
             raise KMLHttpException(http_ret.status_code, "get_basicinfo stage, url:{}".format(sparse_config_url))
 
     def submit_record(self):
+        # 启动任务
         task_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/task-record'.format(self.task_comid)
         http_ret = requests.post(task_url, headers=headers, data=json.dumps(self.submit_config))
         if http_ret.status_code != 200:
@@ -149,7 +154,7 @@ class KMLAIFlowController(object):
 
         record_status = json.loads(http_ret.text)
         task_id = record_status['taskMetaId']
-        cluster_name = task_st['clusterName']
+        cluster_name = record_status['clusterName']
         self.log_url = 'http://kml.corp.kuaishou.com/v2/log-manager/api/v1/logs?namespace=gray-dedicated&taskType=task&taskId={}&instance=kml-task-{}-record-{}-prod-launcher-0&clusterName={}&limit=100&trimTimestamp=true'.format(
             self.panda_id, task_id, self.panda_id, cluster_name)
 
@@ -174,6 +179,7 @@ class KMLAIFlowController(object):
         self.latest_record_status = json.loads(http_ret.text)
 
     def stop_record(self):
+        # 结束任务
         url = 'https://kml.corp.kuaishou.com/v2/panda/api/v1/task-records/{}/stop'.format(self.panda_id)
         http_ret = requests.post(url, headers=headers)
         if http_ret.status_code != 200:
@@ -185,9 +191,14 @@ if __name__ == '__main__':
         flowid = 28236
         kml_controller = KMLAIFlowController(flowid)
         kml_controller.start()
-        image_name = 'registry.corp.kuaishou.com/kml-platform/kai_v2:cid-b433889_c433889_release-2.5_3ced6cf6a_all_gpu-python-stream-cuda-11.4-nvtf-1.15-20240124_150743'
-        kml_controller.change_image(image_name)
-        kml_controller.change_replicas('worker', 2)
+        # image_name = 'registry.corp.kuaishou.com/kml-platform/kai_v2:cid-b433889_c433889_release-2.5_3ced6cf6a_all_gpu-python-stream-cuda-11.4-nvtf-1.15-20240124_150743'
+        # kml_controller.change_image(image_name)
+        kml_controller.change_replicas('worker', 1)
+        kml_controller.change_batch_size(16384)
+        kml_controller.submit_sparse_config()
+        kml_controller.submit_record()
+        time.sleep(600)
+        kml_controller.stop_record()
 
         '''
         # get time for yesterday 01:00:00 to 02:00:00
@@ -214,7 +225,3 @@ if __name__ == '__main__':
         '''
     except KMLHttpException as e:
         print(e)
-
-
-
-

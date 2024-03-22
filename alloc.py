@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import csv
+import aiflow
 
 
 class ClickHouseQuery:
@@ -110,6 +111,7 @@ class PredictionClient:
             print("Error: {}".format(e))
             return None
 
+
 if __name__ == '__main__':
 
     # 使用示例
@@ -125,7 +127,7 @@ if __name__ == '__main__':
     GROUP BY toStartOfMinute(fromUnixTimestamp(toInt64(ts / 1000)))
     ORDER BY minute ASC
     """
-    token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoNMTcyLjI1LjM2LjEwNSjqh-vU5TEw6sGi2OUxOAo.27aANT0SkqyAs1sdw3yU4nsCMHKjFxwWIKCBBDl30WM'
+    token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoOMTcyLjI1LjEwMC4xMDco-fDJqeYxMPmqga3mMTgK.MIS9K7sSWv3AZLhBwoh8BEz0X8RL7-NI9hSG3UJwZZY'
     clickhouse_client = ClickHouseQuery(' http://themis-olap-gateway.internal/',
                                         token=token,
                                         user='liuziyang05')
@@ -142,3 +144,10 @@ if __name__ == '__main__':
     throughput = 190000  # 给定吞吐量
     worker_num = allocator.throughput_to_workernum(throughput)
     print(f"对应的 worker 数量为: {worker_num}")
+
+    kml_controller = aiflow.KMLAIFlowController(28236)
+    kml_controller.start()
+    machine_num = worker_num / 2
+    kml_controller.change_replicas('worker', machine_num)
+    kml_controller.change_batch_size(16384 / machine_num)
+    kml_controller.submit_sparse_config()
