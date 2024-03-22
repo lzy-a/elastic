@@ -45,7 +45,7 @@ class KMLAIFlowController(object):
     '''
 
     def start(self):
-        workspace_url = 'https://kml.corp.kuaishou.com/v2/ai-flow/api/v1/workspace/{}'.format(flowid)
+        workspace_url = 'https://kml.corp.kuaishou.com/v2/ai-flow/api/v1/workspace/{}'.format(self.flowid)
         http_ret = requests.get(workspace_url, headers=headers)
         if http_ret.status_code != 200:
             raise KMLHttpException(http_ret.status_code, "start stage, workspace_url:{}".format(workspace_url))
