@@ -141,7 +141,7 @@ def modelPridict():
     Exp = Exp_Main
     args = Args(
         itr=1,
-        model='transformer',
+        model='Transformer',
         seq_len=96,
         label_len=48,
         pred_len=4,
