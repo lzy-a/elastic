@@ -154,6 +154,9 @@ class ElasticOnlineLearningController:
     def get_replicas_num(self):
         return self.kml_controller.get_replicas_num()
 
+    def cal(self, prediction):
+        return sum(prediction) / len(prediction)
+
 
 if __name__ == '__main__':
 
@@ -180,17 +183,21 @@ if __name__ == '__main__':
     controller = ElasticOnlineLearningController(clickhouse_client, prediction_client, gpu_allocator, kml_controller)
 
     while True:
-        #查询过去一天的流量
+        # 查询过去一天的流量
         controller.execute_clickhouse_query(query)
-        #预测未来一小时流量
+        # 预测未来一小时流量
         prediction = controller.get_prediction()
-        throughput = cal(prediction) # 构建状态及计算需要rescale到的流量
-        worker_num = controller.calculate_worker_num(throughput) # 计算需要的worker数量
+        throughput = controller.cal(prediction)  # 构建状态及计算需要rescale到的流量
+        worker_num = controller.calculate_worker_num(throughput * 0.2917 + 20.833)  # 计算需要的worker数量
         machine_num = worker_num / 2
+        if machine_num < 2:
+            machine_num = 2
+        if machine_num > 16:
+            machine_num = 16
         if machine_num != controller.get_replicas_num():
             controller.stop_record()
             controller.change_replicas('worker', machine_num)
             controller.change_batch_size(16384 / machine_num)
             controller.submit_sparse_config()
             controller.submit_record()
-        time.sleep(60)
+        time.sleep(60 * 15)
