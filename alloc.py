@@ -1,3 +1,5 @@
+import time
+
 import requests
 import pandas as pd
 import csv
@@ -112,6 +114,47 @@ class PredictionClient:
             return None
 
 
+class ElasticOnlineLearningController:
+    def __init__(self, clickhouse_client, prediction_client, gpu_allocator, kml_controller):
+        self.clickhouse_client = clickhouse_client
+        self.prediction_client = prediction_client
+        self.gpu_allocator = gpu_allocator
+        self.kml_controller = kml_controller
+
+    def execute_clickhouse_query(self, query):
+        return self.clickhouse_client.execute_query(query)
+
+    def save_clickhouse_result_to_csv(self, result, file_path):
+        self.clickhouse_client.res_to_csv(result, file_path)
+
+    def get_prediction(self):
+        return self.prediction_client.get_prediction()
+
+    def calculate_worker_num(self, throughput):
+        return self.gpu_allocator.throughput_to_workernum(throughput)
+
+    def start_kml_controller(self):
+        self.kml_controller.start()
+
+    def change_replicas(self, component, machine_num):
+        self.kml_controller.change_replicas(component, machine_num)
+
+    def change_batch_size(self, batch_size):
+        self.kml_controller.change_batch_size(batch_size)
+
+    def submit_sparse_config(self):
+        self.kml_controller.submit_sparse_config()
+
+    def submit_record(self):
+        self.kml_controller.submit_record()
+
+    def stop_record(self):
+        self.kml_controller.stop_record()
+
+    def get_replicas_num(self):
+        return self.kml_controller.get_replicas_num()
+
+
 if __name__ == '__main__':
 
     # 使用示例
@@ -128,26 +171,26 @@ if __name__ == '__main__':
     ORDER BY minute ASC
     """
     token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoOMTcyLjI1LjEwMC4xMDco-fDJqeYxMPmqga3mMTgK.MIS9K7sSWv3AZLhBwoh8BEz0X8RL7-NI9hSG3UJwZZY'
-    clickhouse_client = ClickHouseQuery(' http://themis-olap-gateway.internal/',
+    clickhouse_client = ClickHouseQuery('http://themis-olap-gateway.internal/',
                                         token=token,
                                         user='liuziyang05')
-    result = clickhouse_client.execute_query(query)
-    if result is not None:
-        print(result)
-        clickhouse_client.res_to_csv(result, './dataset/predict_data.csv')
+    prediction_client = PredictionClient('http://127.0.0.1:5000/predict')
+    gpu_allocator = GPUAllocator()
+    kml_controller = aiflow.kml_controller(28236)
+    controller = ElasticOnlineLearningController(clickhouse_client, prediction_client, gpu_allocator, kml_controller)
 
-    client = PredictionClient('http://127.0.0.1:5000/predict')
-    prediction = client.get_prediction()
-    print(f"Prediction: {prediction}")
-
-    allocator = GPUAllocator()
-    throughput = 190000  # 给定吞吐量
-    worker_num = allocator.throughput_to_workernum(throughput)
-    print(f"对应的 worker 数量为: {worker_num}")
-
-    kml_controller = aiflow.KMLAIFlowController(28236)
-    kml_controller.start()
-    machine_num = worker_num / 2
-    kml_controller.change_replicas('worker', machine_num)
-    kml_controller.change_batch_size(16384 / machine_num)
-    kml_controller.submit_sparse_config()
+    while True:
+        #查询过去一天的流量
+        controller.execute_clickhouse_query(query)
+        #预测未来一小时流量
+        prediction = controller.get_prediction()
+        throughput = cal(prediction) # 构建状态及计算需要rescale到的流量
+        worker_num = controller.calculate_worker_num(throughput) # 计算需要的worker数量
+        machine_num = worker_num / 2
+        if machine_num != controller.get_replicas_num():
+            controller.stop_record()
+            controller.change_replicas('worker', machine_num)
+            controller.change_batch_size(16384 / machine_num)
+            controller.submit_sparse_config()
+            controller.submit_record()
+        time.sleep(60)

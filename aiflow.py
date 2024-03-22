@@ -38,7 +38,7 @@ class KMLAIFlowController(object):
             {"runtimeMode": "train", "coldStart": True, "willSaveModel": True, "useBtq": False,
              "willSaveRollbackModel": False}], "defaultRuntimeMode": "train"}}
         self.log_url = None
-
+        self.replicas_num = None
     ''' 
     start: get comid from flowid
     iteration main page:  https://kml.corp.kuaishou.com/v2/#/project/529/sparse/workspace/817
@@ -105,6 +105,7 @@ class KMLAIFlowController(object):
             print(http_ret.text)
             raise KMLHttpException(http_ret.status_code, "change replicas stage, url:{}".format(taskinfo_url))
         print('change replicas success', http_ret.text)
+        self.replicas_num = replicas
 
     def change_image(self, image_name):
         print('new image name', image_name)
@@ -185,6 +186,8 @@ class KMLAIFlowController(object):
         if http_ret.status_code != 200:
             raise KMLHttpException(http_ret.status_code, "stop_record stage, url:{}".format(url))
 
+    def get_replicas_num(self):
+        return self.replicas_num
 
 if __name__ == '__main__':
     try:
@@ -196,6 +199,9 @@ if __name__ == '__main__':
         kml_controller.change_replicas('worker', 1)
         kml_controller.change_batch_size(16384)
         kml_controller.submit_sparse_config()
+        kml_controller.submit_record()
+        time.sleep(600)
+        kml_controller.stop_record()
         kml_controller.submit_record()
         time.sleep(600)
         kml_controller.stop_record()
