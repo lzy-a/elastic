@@ -128,28 +128,36 @@ class ElasticOnlineLearningController:
         self.clickhouse_client.res_to_csv(result, file_path)
 
     def get_prediction(self):
-        return self.prediction_client.get_prediction()
+        prediction = self.prediction_client.get_prediction()
+        print(f"Prediction: {prediction}")
+        return prediction
 
     def calculate_worker_num(self, throughput):
-        return self.gpu_allocator.throughput_to_workernum(throughput)
+        worker_num = self.gpu_allocator.throughput_to_workernum(throughput)
+        print(f"Worker num: {worker_num}")
+        return worker_num
 
     def start_kml_controller(self):
         self.kml_controller.start()
 
     def change_replicas(self, component, machine_num):
         self.kml_controller.change_replicas(component, machine_num)
+        print(f"Replicas of {component} changed to {machine_num}.")
 
     def change_batch_size(self, batch_size):
         self.kml_controller.change_batch_size(batch_size)
+        print(f"Batch size changed to {batch_size}.")
 
     def submit_sparse_config(self):
         self.kml_controller.submit_sparse_config()
 
     def submit_record(self):
         self.kml_controller.submit_record()
+        print("Record submitted.")
 
     def stop_record(self):
         self.kml_controller.stop_record()
+        print("Record stopped.")
 
     def get_replicas_num(self):
         return self.kml_controller.get_replicas_num()
@@ -200,4 +208,4 @@ if __name__ == '__main__':
             controller.change_batch_size(16384 / machine_num)
             controller.submit_sparse_config()
             controller.submit_record()
-        time.sleep(60 * 15)
+        time.sleep(60 * 5)
