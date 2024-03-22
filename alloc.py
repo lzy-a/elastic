@@ -122,7 +122,9 @@ class ElasticOnlineLearningController:
         self.kml_controller = kml_controller
 
     def execute_clickhouse_query(self, query):
-        return self.clickhouse_client.execute_query(query)
+        res = self.clickhouse_client.execute_query(query)
+        print(f"Query result: {res}")
+        return res
 
     def save_clickhouse_result_to_csv(self, result, file_path):
         self.clickhouse_client.res_to_csv(result, file_path)
@@ -213,4 +215,6 @@ if __name__ == '__main__':
             controller.change_batch_size(16384 / machine_num)
             controller.submit_sparse_config()
             controller.submit_record()
-        time.sleep(60 * 5)
+            time.sleep(60 * 10)
+        else:
+            time.sleep(60 * 3)

@@ -86,7 +86,7 @@ class KMLAIFlowController(object):
     # role: worker, extraIO, extraPS
     def change_replicas(self, role, replicas):
         assert role in ['worker', 'extraIO', 'extraPS']
-        print(self.task_info)
+        # print(self.task_info)
         self.task_info['roleInfo'][role]['replicas'] = replicas
         taskinfo_url = 'https://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/task-info?comId={}&action=task-info'.format(
             self.task_comid, self.task_comid)
@@ -115,7 +115,7 @@ class KMLAIFlowController(object):
         http_ret = requests.post(basicinfo_url, headers=headers, data=json.dumps(self.sparse_basicinfo))
         if http_ret.status_code != 200:
             raise KMLHttpException(http_ret.status_code, "change_image stage, url:{}".format(basicinfo_url))
-        print('change image success', http_ret.text)
+        # print('change image success', http_ret.text)
 
     def change_train_begin_time_ms(self, begin_time_ms):
         self.sparse_config_yamldict['io_config']['train']['begin_time_ms'] = begin_time_ms
@@ -131,7 +131,7 @@ class KMLAIFlowController(object):
         sparse_config_url = 'http://kml.corp.kuaishou.com/v2/ai-flow/api/v1/com/{}/sparse-training-config'.format(
             self.config_comid)
         new_config_yamlstr = yaml.dump(self.sparse_config_yamldict, default_flow_style=False, allow_unicode=True)
-        print('new yaml config', new_config_yamlstr)
+        # print('new yaml config', new_config_yamlstr)
         pconf = dict()
         pconf['config'] = new_config_yamlstr
         http_ret = requests.post(sparse_config_url, headers=headers, data=json.dumps(pconf))
