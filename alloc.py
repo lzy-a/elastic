@@ -189,6 +189,7 @@ if __name__ == '__main__':
     gpu_allocator = GPUAllocator()
     kml_controller = aiflow.KMLAIFlowController(28236)
     kml_controller.change_replicas('worker', 8)
+    kml_controller.start()
     kml_controller.change_batch_size(2048)
     kml_controller.submit_sparse_config()
     kml_controller.submit_record()
