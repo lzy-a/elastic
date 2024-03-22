@@ -89,6 +89,27 @@ class GPUAllocator:
         return left if left % 2 == 0 else left + 1
 
 
+class PredictionClient:
+    def __init__(self, url):
+        self.url = url
+
+    def get_prediction(self):
+        try:
+            response = requests.get(self.url)
+            if response.status_code == 200:
+                data = response.json()
+                if 'result' in data:
+                    result_list = data['result']
+                    float_array = [float(value[0]) for value in result_list]
+                    return float_array
+                else:
+                    raise ValueError("Response does not contain 'result' field.")
+            else:
+                raise ValueError("Failed to fetch prediction. Status code: {}".format(response.status_code))
+        except requests.exceptions.RequestException as e:
+            print("Error: {}".format(e))
+            return None
+
 if __name__ == '__main__':
 
     # 使用示例
@@ -112,6 +133,10 @@ if __name__ == '__main__':
     if result is not None:
         print(result)
         clickhouse_client.res_to_csv(result, './dataset/predict_data.csv')
+
+    client = PredictionClient('http://127.0.0.1:5000/predict')
+    prediction = client.get_prediction()
+    print(f"Prediction: {prediction}")
 
     allocator = GPUAllocator()
     throughput = 190000  # 给定吞吐量
