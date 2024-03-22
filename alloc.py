@@ -196,7 +196,7 @@ if __name__ == '__main__':
     kml_controller.submit_sparse_config()
     kml_controller.submit_record()
     controller = ElasticOnlineLearningController(clickhouse_client, prediction_client, gpu_allocator, kml_controller)
-    time.sleep(300)
+    time.sleep(100)
     while True:
         # 查询过去一天的流量
         controller.execute_clickhouse_query(query)
