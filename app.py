@@ -181,7 +181,7 @@ def modelPridict():
 
             torch.cuda.empty_cache()
 
-    return result
+    return result.tolist()
 
 
 if __name__ == '__main__':
