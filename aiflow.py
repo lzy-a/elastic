@@ -186,7 +186,7 @@ if __name__ == '__main__':
         kml_controller = KMLAIFlowController(flowid)
         kml_controller.start()
         image_name = 'registry.corp.kuaishou.com/kml-platform/kai_v2:cid-b433889_c433889_release-2.5_3ced6cf6a_all_gpu-python-stream-cuda-11.4-nvtf-1.15-20240124_150743'
-        # kml_controller.change_image(image_name)
+        kml_controller.change_image(image_name)
         kml_controller.change_replicas('worker', 2)
 
         '''

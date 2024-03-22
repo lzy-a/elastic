@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 
 class Args:
-    def __init__(self, is_training=1, itr=3, task_id='test', model='FEDformer', mode_select='random', modes=64,
+    def __init__(self, is_training=1, itr=3, task_id='kai', model='informer', mode_select='random', modes=64,
                  version='Fourier', L=3, base='legendre', cross_activation='tanh', data='custom',
                  root_path='./dataset/',
                  data_path='predict_data.csv', features='S', target='target', freq='h', detail_freq='h',
@@ -81,13 +81,6 @@ def perform_inference(input_data):
 @app.route('/predict', methods=['GET'])
 def predict():
     try:
-        # 获取 GET 请求中的参数
-        input_data = request.args.get('input_data')
-
-        # 检查参数是否存在
-        if input_data is None:
-            return jsonify({"error": "Missing 'input_data' parameter"}), 400
-
         # 调用模型推理
         result = modelPridict()
 
@@ -149,6 +142,11 @@ def modelPridict():
     args = Args(
         itr=1,
         model='transformer',
+        seq_len=96,
+        label_len=48,
+        pred_len=4,
+        data='custom',
+        features='S',
     )
     result = []
     if args.is_training:
