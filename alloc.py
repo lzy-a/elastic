@@ -179,7 +179,7 @@ if __name__ == '__main__':
                                         user='liuziyang05')
     prediction_client = PredictionClient('http://127.0.0.1:5000/predict')
     gpu_allocator = GPUAllocator()
-    kml_controller = aiflow.kml_controller(28236)
+    kml_controller = aiflow.KMLAIFlowController(28236)
     controller = ElasticOnlineLearningController(clickhouse_client, prediction_client, gpu_allocator, kml_controller)
 
     while True:
