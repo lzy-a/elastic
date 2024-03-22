@@ -211,7 +211,8 @@ if __name__ == '__main__':
             machine_num = 16
         if machine_num != controller.get_replicas_num():
             controller.stop_record()
-            controller.change_replicas('worker', machine_num)
+            controller.kml_controller.start()
+            controller.change_replicas('worker', int(machine_num))
             controller.change_batch_size(16384 / machine_num)
             controller.submit_sparse_config()
             controller.submit_record()
