@@ -92,6 +92,13 @@ class GPUAllocator:
         # 返回向上取整到最接近的 2 的倍数的结果
         return left if left % 2 == 0 else left + 1
 
+    def throughput_to_workernum_v2(self, throughput):
+        # 返回一个2的幂
+        x = 2
+        while self.calculate_throughput(x) < throughput:
+            x *= 2
+        return x
+
 
 class PredictionClient:
     def __init__(self, url):
@@ -136,7 +143,7 @@ class ElasticOnlineLearningController:
         return prediction
 
     def calculate_worker_num(self, throughput):
-        worker_num = self.gpu_allocator.throughput_to_workernum(throughput)
+        worker_num = self.gpu_allocator.throughput_to_workernum_v2(throughput)
         print(f"Worker num: {worker_num}")
         return worker_num
 
@@ -167,16 +174,6 @@ class ElasticOnlineLearningController:
 
     def cal(self, prediction):
         return sum(prediction) / len(prediction)
-
-
-def round_up_to_power_of_two(n):
-    n -= 1
-    n |= n >> 1
-    n |= n >> 2
-    n |= n >> 4
-    n |= n >> 8
-    n |= n >> 16
-    return n + 1 if n >= 0 else 1
 
 
 if __name__ == '__main__':
@@ -217,7 +214,6 @@ if __name__ == '__main__':
         throughput = controller.cal(prediction)  # 构建状态及计算需要rescale到的流量
         worker_num = controller.calculate_worker_num(throughput * 0.2917 + 20.833)  # 计算需要的worker数量
         machine_num = int(worker_num / 2)
-        machine_num = round_up_to_power_of_two(machine_num)
         if machine_num < 2:
             machine_num = 2
         if machine_num > 16:
