@@ -143,7 +143,7 @@ class ElasticOnlineLearningController:
         return prediction
 
     def calculate_worker_num(self, throughput):
-        worker_num = self.gpu_allocator.throughput_to_workernum_v2(throughput)
+        worker_num = self.gpu_allocator.throughput_to_workernum(throughput)
         print(f"Worker num: {worker_num}")
         return worker_num
 
