@@ -60,6 +60,7 @@ class ClickHouseQuery:
                 writer.writerows(result)
 
             print(f"Result has been successfully written to {path}")
+            print(result)
         except Exception as e:
             print(f"Error occurred while writing result to {path}: {e}")
 
@@ -123,7 +124,7 @@ class ElasticOnlineLearningController:
 
     def execute_clickhouse_query(self, query):
         res = self.clickhouse_client.execute_query(query)
-        print(f"Query result: {res}")
+        # print(f"Query result: {res}")
         return res
 
     def save_clickhouse_result_to_csv(self, result, file_path):
@@ -183,7 +184,7 @@ if __name__ == '__main__':
     GROUP BY toStartOfMinute(fromUnixTimestamp(toInt64(ts / 1000)))
     ORDER BY minute ASC
     """
-    token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoOMTcyLjI1LjEwMC4xMDco-fDJqeYxMPmqga3mMTgK.MIS9K7sSWv3AZLhBwoh8BEz0X8RL7-NI9hSG3UJwZZY'
+    token = 'Ch1saXV6aXlhbmcwNS91c2VyQGt1YWlzaG91LmNvbRoOMTcyLjI1LjEwOC4xMjgo75i5necxMO_S8KDnMTgK.yuQ4FXZraicKbP70et59LtwcnGVuW_tv1XegQ-0cWlo'
     clickhouse_client = ClickHouseQuery('http://themis-olap-gateway.internal/',
                                         token=token,
                                         user='liuziyang05')
@@ -199,7 +200,8 @@ if __name__ == '__main__':
     time.sleep(100)
     while True:
         # 查询过去一天的流量
-        controller.execute_clickhouse_query(query)
+        res = controller.execute_clickhouse_query(query)
+        controller.save_clickhouse_result_to_csv(res,'./dataset/predict_data.csv')
         # 预测未来一小时流量
         prediction = controller.get_prediction()
         throughput = controller.cal(prediction)  # 构建状态及计算需要rescale到的流量
