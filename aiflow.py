@@ -189,6 +189,9 @@ class KMLAIFlowController(object):
     def get_replicas_num(self):
         return self.replicas_num
 
+    def set_cold_start(self):
+        self.submit_config['config']['runtimeModeConfigs'][0]['coldStart'] = True
+
 if __name__ == '__main__':
     try:
         flowid = 28236
